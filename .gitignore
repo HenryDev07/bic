@@ -1,0 +1,10 @@
+/vendor/
+/config/local.php
+/storage/uploads/*
+/storage/backups/*
+/storage/logs/*
+/storage/cache/*
+!/storage/*/.gitkeep
+.phpunit.result.cache
+.idea/
+.vscode/
