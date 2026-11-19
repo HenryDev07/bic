@@ -93,8 +93,8 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 
 | Etapa | Contenido | Criterio de aceptación |
 |---|---|---|
-| **2 — Base** *(esta entrega)* | Composer, PDO, migrador, `schema.sql` sincronizado, linter, usuario `bic_app`; tablas: `businesses`, `warehouses`, `settings`, `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `login_attempts`, `audit_logs`, `idempotency_keys` | `composer test` verde; `install.php` + `db-check.php` correctos en tu WAMP |
-| 3 — Estructura | Router, layout, sidebar, login, usuarios, roles, CSRF, auditoría, dashboard vacío | Sin permiso → 403 en servidor |
+| **2 — Base** *(hecha)* | Composer, PDO, migrador, `schema.sql` sincronizado, linter, usuario `bic_app`; tablas: `businesses`, `warehouses`, `settings`, `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `login_attempts`, `audit_logs`, `idempotency_keys` | `composer test` verde; `install.php` + `db-check.php` correctos en tu WAMP |
+| **3 — Estructura** *(hecha)* | Router, layout y sidebar morado, login con bloqueo, usuarios, roles con anti-escalada, configuración, auditoría, CSRF, CSP estricta, dashboard base con datos reales | Sin permiso → 403 en servidor (probado con peticiones completas) |
 | 4a — Catálogo y proveedores | `tax_rates`, unidades, categorías, marcas, productos, variantes, precios históricos, proveedores | CRUD + historial + CSV |
 | 4b — Núcleo financiero | `financial_accounts`, `financial_transactions`, `capital_movements`, `account_transfers`, `Money` | Conciliación de saldos |
 | 4c — Inventario | `stock_levels`, `stock_movements`, `stock_reservations`, capas FIFO | Invariantes de §3 y concurrencia |

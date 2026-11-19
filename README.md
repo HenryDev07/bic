@@ -1,6 +1,6 @@
 # BIC — Business Intelligence Commerce
 
-Estado: **Etapa 2 (base de datos)**. Arquitectura y plan completos en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
+Estado: **Etapa 3 (estructura, acceso, usuarios, roles, configuración, auditoría)**. Arquitectura y plan completos en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 
 ## Requisitos
 PHP 8.3+ (extensiones `pdo_mysql`, `mbstring`), MySQL 8 / MariaDB 10.4+, Composer.
@@ -19,6 +19,19 @@ composer test
 * Para no teclearla: `set BIC_DB_ADMIN_PASSWORD=...` (PowerShell: `$env:BIC_DB_ADMIN_PASSWORD="..."`) antes del comando.
 * `db-check.php` conecta como `bic_app` y comprueba que **no** puede alterar el esquema ni editar `audit_logs`.
 * Alternativa por phpMyAdmin: importar `database/schema.sql` (solo estructura), luego `php bin/migrate.php --seed`.
+
+## Primer acceso (Etapa 3)
+```
+php bin/create-admin.php          # crea tu usuario Administrador (pide nombre, correo y contraseña)
+```
+Abre **http://localhost/bic/** (o `http://localhost/bic/public/`) e inicia sesión. Requiere `mod_rewrite` activo en Apache (WAMP: menú Apache → Módulos → `rewrite_module`) y `AllowOverride All` (por defecto en WAMP).
+
+Comprobación de seguridad recomendada: abre `http://localhost/bic/config/local.php` y `http://localhost/bic/src/Core/App.php`; ambas deben responder **403 Prohibido**.
+
+Qué incluye: inicio/cierre de sesión con bloqueo por intentos fallidos, usuarios (alta, edición, activar/desactivar), roles con matriz de permisos editable, configuración de seguridad, auditoría con filtros, perfil (cambio de contraseña) y tema claro/oscuro.
+
+## Pruebas
+`composer test` ejecuta ~59 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
 
 ## Flujo de trabajo del esquema
 | Quiero… | Comando |

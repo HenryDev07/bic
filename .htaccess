@@ -1,0 +1,9 @@
+# Protección para servidores donde la raíz del proyecto cuelga del document root (WAMP: www/bic).
+# Solo public/ puede servirse; config/, src/, database/, storage/, vendor/, .git, etc. quedan bloqueados.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [L]
+    RewriteRule ^(?!public/) - [F,L]
+</IfModule>

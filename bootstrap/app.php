@@ -21,4 +21,8 @@ if (!is_file($autoload)) {
 
 require $autoload;
 
+// Todo el sistema trabaja en UTC internamente; la zona del negocio solo se aplica al mostrar.
+date_default_timezone_set('UTC');
+mb_internal_encoding('UTF-8');
+
 return \Bic\Core\Config::load(dirname(__DIR__));

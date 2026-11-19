@@ -71,30 +71,54 @@ final class Database
         return $this->pdo = $pdo;
     }
 
+    /** Para pruebas: envuelve un PDO ya creado (p. ej. SQLite en memoria). */
+    public static function fromPdo(PDO $pdo): self
+    {
+        $db = new self('', 0, null, '', '');
+        $db->pdo = $pdo;
+
+        return $db;
+    }
+
+    /**
+     * Ejecuta con tipos explícitos: los enteros se envían como INT (necesario para
+     * LIMIT/OFFSET con sentencias preparadas nativas) y null como NULL.
+     */
+    private function prepared(string $sql, array $params): \PDOStatement
+    {
+        $stmt = $this->pdo()->prepare($sql);
+        foreach ($params as $key => $value) {
+            $name = is_int($key) ? $key + 1 : (str_starts_with((string) $key, ':') ? $key : ':' . $key);
+            $type = match (true) {
+                is_bool($value) => PDO::PARAM_INT,
+                is_int($value)  => PDO::PARAM_INT,
+                $value === null => PDO::PARAM_NULL,
+                default         => PDO::PARAM_STR,
+            };
+            $stmt->bindValue($name, is_bool($value) ? (int) $value : $value, $type);
+        }
+        $stmt->execute();
+
+        return $stmt;
+    }
+
     /** @return list<array<string,mixed>> */
     public function select(string $sql, array $params = []): array
     {
-        $stmt = $this->pdo()->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll();
+        return $this->prepared($sql, $params)->fetchAll();
     }
 
     /** @return array<string,mixed>|null */
     public function first(string $sql, array $params = []): ?array
     {
-        $stmt = $this->pdo()->prepare($sql);
-        $stmt->execute($params);
-        $row = $stmt->fetch();
+        $row = $this->prepared($sql, $params)->fetch();
 
         return $row === false ? null : $row;
     }
 
     public function value(string $sql, array $params = []): mixed
     {
-        $stmt = $this->pdo()->prepare($sql);
-        $stmt->execute($params);
-        $value = $stmt->fetchColumn();
+        $value = $this->prepared($sql, $params)->fetchColumn();
 
         return $value === false ? null : $value;
     }
@@ -102,10 +126,7 @@ final class Database
     /** Devuelve filas afectadas. */
     public function execute(string $sql, array $params = []): int
     {
-        $stmt = $this->pdo()->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->rowCount();
+        return $this->prepared($sql, $params)->rowCount();
     }
 
     public function insert(string $sql, array $params = []): int
