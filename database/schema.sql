@@ -784,6 +784,84 @@ CREATE TABLE IF NOT EXISTS order_return_lines (
   FOREIGN KEY (stock_movement_id) REFERENCES stock_movements (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ===== 0011_expenses =====
+-- 0011: gastos operativos. El importe vive solo en el asiento del libro de caja (1:1 por UNIQUE).
+-- Los fletes/aranceles de una compra NO son gastos: van en purchase_cost_lines (se capitalizan al costo).
+CREATE TABLE IF NOT EXISTS expense_categories (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_expense_category (business_id, name),
+  FOREIGN KEY (business_id) REFERENCES businesses (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS expenses (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  expense_category_id BIGINT UNSIGNED NOT NULL,
+  financial_transaction_id BIGINT UNSIGNED NOT NULL,
+  expense_date DATE NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  order_id BIGINT UNSIGNED NULL,
+  product_id BIGINT UNSIGNED NULL,
+  supplier_id BIGINT UNSIGNED NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_expense_tx (financial_transaction_id),
+  KEY idx_expenses_date (business_id, expense_date),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (expense_category_id) REFERENCES expense_categories (id),
+  FOREIGN KEY (financial_transaction_id) REFERENCES financial_transactions (id),
+  FOREIGN KEY (order_id) REFERENCES orders (id),
+  FOREIGN KEY (product_id) REFERENCES products (id),
+  FOREIGN KEY (supplier_id) REFERENCES suppliers (id),
+  FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ===== 0012_research =====
+-- 0012: investigación de productos y precios de mercado.
+CREATE TABLE IF NOT EXISTS research_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  status ENUM('idea','evaluating','approved','discarded') NOT NULL DEFAULT 'idea',
+  estimated_cost DECIMAL(14,2) NULL,
+  target_price DECIMAL(14,2) NULL,
+  product_id BIGINT UNSIGNED NULL,
+  notes TEXT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_research_status (business_id, status),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (product_id) REFERENCES products (id),
+  FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Observaciones de precio (historial inmutable), moneda base.
+CREATE TABLE IF NOT EXISTS research_prices (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  research_item_id BIGINT UNSIGNED NOT NULL,
+  source VARCHAR(150) NOT NULL,
+  observed_price DECIMAL(14,2) NOT NULL,
+  observed_on DATE NOT NULL,
+  url VARCHAR(500) NULL,
+  notes VARCHAR(255) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_research_prices_item (research_item_id, observed_on),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (research_item_id) REFERENCES research_items (id),
+  FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO schema_migrations (version, checksum) VALUES
   ('0001_core_business', '46e44138dac300ec8801b840b8f1b6808486a79537167727c2f6be558acf47e4'),
   ('0002_security', '478534742a74e5c80c19c1b829ea228e2789f849ac5bfeaaf24ab754dc670497'),
@@ -794,4 +872,6 @@ INSERT IGNORE INTO schema_migrations (version, checksum) VALUES
   ('0007_inventory', '5639c6d7698e26df942ec4c4cf30fb7a2d31d09999c4c48e37b0185c12bf6650'),
   ('0008_purchasing', 'b42df7914e35d990e3666fa23ebc0d9d8f7b1f184d13be9e35d2be2ade2484e2'),
   ('0009_customers', 'fab32ce377a1f8530dc728877bf858685b99928effb520b2055f59b930a06395'),
-  ('0010_orders', '9f18115b6018db536df7e7d52bb2ed15ad3b121c53a30200bc2ab0fdc442a281');
+  ('0010_orders', '9f18115b6018db536df7e7d52bb2ed15ad3b121c53a30200bc2ab0fdc442a281'),
+  ('0011_expenses', 'f6b38e3795235937a4ae1b02c1c1e03aadb35fd96d0657f22619ecf533b77d6a'),
+  ('0012_research', '6c391148eab293630a5397c818cec39d0f516ecdff9a67c35e72caf9599bfc28');

@@ -100,7 +100,7 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **4c — Inventario** *(hecha)* | `stock_levels`, `stock_movements` (inmutable), ajustes, transferencias, kardex, conciliación. `stock_reservations` llega con los pedidos (4e) y las capas FIFO quedan preparadas | Saldo = suma de movimientos; sin stock negativo ni sacar lo reservado |
 | **4d — Compras** *(hecha)* | órdenes, líneas con impuesto recuperable o no, costos de llegada, recepciones parciales, pagos ligados al libro de caja | Costo promedio correcto al recibir; compra ≠ gasto |
 | **4e — Clientes y pedidos** *(hecha)* | `customers`, `orders`, `order_lines`, `stock_reservations`, `order_status_history`, `order_payments`, `order_returns(+lines)`; reservas, entrega con costo congelado, anticipos/cobros/reembolsos ligados al libro, devoluciones proporcionales, idempotencia de cobros | Ciclo de §2 completo, sin doble registro |
-| 4f — Gastos e investigación | `expenses`, `research_*` | Ganancia bruta/neta cuadran con casos a mano |
+| **4f — Gastos e investigación** *(hecha)* | `expense_categories`, `expenses` (1:1 con el libro), `research_items`, `research_prices` (inmutable); estado de resultados | Ganancia bruta/neta cuadran con casos a mano (probado) |
 | 4g — Dashboard real | Indicadores y gráficos | Ninguna cifra estática |
 | 5 — Inteligencia y reportes | Clasificación, ABC, rotación, equilibrio, PDF/Excel/CSV | Reportes = dashboard |
 | 6 — IA | Proveedores intercambiables, contexto, recomendaciones | Funciona con y sin API |
@@ -131,3 +131,8 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 - Devoluciones: importes proporcionales; la última devolución de una línea toma el resto exacto. Con reposición, el stock vuelve al costo original. El reembolso en dinero es un paso aparte (saldo a favor del cliente).
 - Permisos: `sales.create` (borrador, líneas, enviar, confirmar), `sales.edit` (preparar, entregar), `sales.pay`, `sales.refund` (reembolsos y anulaciones), `sales.cancel`, `sales.return`.
 - Ventas solo en moneda base (las cuentas ya lo son).
+
+## 11. Notas de la etapa 4f
+- Gasto = salida del libro (`source_type='expense'`), se anula desde el gasto (`expenses.void`). Categorías por negocio (se siembran 7 por defecto al primer uso). Enlaces opcionales a proveedor, producto o pedido; nunca a compras (esos costos se capitalizan).
+- Estado de resultados (`/expenses/profit`, moneda base, sin impuestos): ingresos = base de pedidos entregados en el período − base de devoluciones del período; costo = costo congelado − costo de lo devuelto **y repuesto** (lo devuelto sin reponer queda como pérdida); bruta = ingresos − costo; neta = bruta − gastos vigentes por su fecha.
+- Investigación: precio objetivo vs costo estimado (margen y recargo) y precios observados (mín/prom/máx). `research_prices` es solo-inserción para `bic_app`.

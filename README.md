@@ -28,6 +28,9 @@ Abre **http://localhost/bic/** (o `http://localhost/bic/public/`) e inicia sesi�
 
 Comprobación de seguridad recomendada: abre `http://localhost/bic/config/local.php` y `http://localhost/bic/src/Core/App.php`; ambas deben responder **403 Prohibido**.
 
+## Etapa 4f — Gastos, resultados e investigación
+Menú **Finanzas**: Gastos y Estado de resultados; **Catálogo**: Investigación. Tras actualizar: `php bin/migrate.php --seed` y `php bin/db-check.php`.
+
 ## Etapa 4e — Clientes y pedidos
 Menú **Ventas**: Pedidos y Clientes. Flujo: borrador → pendiente → confirmado → preparado → entregado (la venta cuenta al entregar). Anticipos, cobros, reembolsos y devoluciones se registran desde el pedido. Tras actualizar: `php bin/migrate.php --seed` y `php bin/db-check.php`.
 
@@ -46,7 +49,7 @@ Primero crea una **cuenta** en Finanzas y, en Catálogo → Impuestos, las tasas
 Qué incluye la Etapa 3: inicio/cierre de sesión con bloqueo por intentos fallidos, usuarios (alta, edición, activar/desactivar), roles con matriz de permisos editable, configuración de seguridad, auditoría con filtros, perfil (cambio de contraseña) y tema claro/oscuro.
 
 ## Pruebas
-`composer test` ejecuta ~140 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
+`composer test` ejecuta ~150 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
 
 ## Flujo de trabajo del esquema
 | Quiero… | Comando |
