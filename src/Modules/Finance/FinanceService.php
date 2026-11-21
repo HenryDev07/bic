@@ -232,7 +232,7 @@ final class FinanceService
      * @param array<string,mixed> $actor
      * @return array{ok:bool,error:?string,status:int}
      */
-    public function void(array $actor, int $txId, string $reason, string $nowUtc): array
+    public function void(array $actor, int $txId, string $reason, string $nowUtc, bool $fromDocument = false): array
     {
         $biz = (int) $actor['business_id'];
         $reason = trim($reason);
@@ -246,7 +246,7 @@ final class FinanceService
         if ($tx['voided_at'] !== null) {
             return ['ok' => false, 'error' => 'El movimiento ya está anulado.', 'status' => 422];
         }
-        if (in_array($tx['source_type'], self::DOCUMENT_SOURCES, true)) {
+        if (!$fromDocument && in_array($tx['source_type'], self::DOCUMENT_SOURCES, true)) {
             return ['ok' => false, 'error' => 'Este asiento pertenece a otro documento: anúlalo desde ese documento.', 'status' => 422];
         }
 
@@ -366,6 +366,9 @@ final class FinanceService
         if (($n = $count("SELECT COUNT(*) FROM account_transfers x JOIN financial_transactions o ON o.id = x.out_transaction_id JOIN financial_transactions i ON i.id = x.in_transaction_id
             WHERE x.business_id = ? AND (o.direction <> 'out' OR i.direction <> 'in' OR o.amount <> i.amount OR o.account_id = i.account_id OR (o.voided_at IS NULL) <> (i.voided_at IS NULL))")) > 0) {
             $issues[] = "{$n} transferencia(s) con patas que no cuadran.";
+        }
+        if (($n = $count("SELECT COUNT(*) FROM financial_transactions t WHERE t.business_id = ? AND t.source_type = 'purchase_payment' AND NOT EXISTS (SELECT 1 FROM purchase_payments p WHERE p.financial_transaction_id = t.id)")) > 0) {
+            $issues[] = "{$n} asiento(s) de pago a proveedor sin pago registrado.";
         }
         foreach ($this->accounts($biz) as $a) {
             if (Decimal::from($a['balance'], 2)->isNegative()) {

@@ -42,10 +42,10 @@ final class SeedsAndAuthTest extends DatabaseTestCase
         $this->assertSame($this->countRows('permissions'), count($perms($this, 'admin')), 'el administrador tiene todos los permisos');
         $this->assertSame([
             'audit.view', 'catalog.manage', 'catalog.view', 'dashboard.view', 'finance.create', 'finance.manage', 'finance.view', 'finance.void',
-            'products.cost', 'products.create', 'products.edit', 'products.view', 'settings.view', 'suppliers.create', 'suppliers.edit', 'suppliers.view',
+            'inventory.adjust', 'inventory.view', 'products.cost', 'products.create', 'products.edit', 'products.view', 'purchases.cancel', 'purchases.create', 'purchases.pay', 'purchases.receive', 'purchases.view', 'settings.view', 'suppliers.create', 'suppliers.edit', 'suppliers.view',
         ], $perms($this, 'manager'));
-        $this->assertSame(['catalog.view', 'dashboard.view', 'finance.view', 'products.cost', 'products.view', 'suppliers.view'], $perms($this, 'analyst'));
-        $this->assertSame(['dashboard.view', 'products.view'], $perms($this, 'seller'), 'el vendedor ve precios pero no costos ni proveedores ni finanzas');
+        $this->assertSame(['catalog.view', 'dashboard.view', 'finance.view', 'inventory.view', 'products.cost', 'products.view', 'purchases.view', 'suppliers.view'], $perms($this, 'analyst'));
+        $this->assertSame(['dashboard.view', 'inventory.view', 'products.view'], $perms($this, 'seller'), 'el vendedor ve precios y existencias pero no costos, compras ni finanzas');
     }
 
     public function testLoginSuccessUpdatesSessionAndAudit(): void

@@ -149,7 +149,7 @@ final class UsersRolesServiceTest extends DatabaseTestCase
         $result = $this->roles()->updatePermissions($manager, $this->roleId('seller'), ['dashboard.view', 'users.delete']);
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('users.delete', (string) $result['error']);
-        $this->assertSame(['dashboard.view', 'products.view'], (new RoleRepository($this->db))->codesForRole($this->roleId('seller')), 'users.delete no se concedió');
+        $this->assertSame(['dashboard.view', 'inventory.view', 'products.view'], (new RoleRepository($this->db))->codesForRole($this->roleId('seller')), 'users.delete no se concedió');
     }
 
     public function testSettingsValidationAndUpdate(): void

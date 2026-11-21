@@ -97,8 +97,8 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **3 — Estructura** *(hecha)* | Router, layout y sidebar morado, login con bloqueo, usuarios, roles con anti-escalada, configuración, auditoría, CSRF, CSP estricta, dashboard base con datos reales | Sin permiso → 403 en servidor (probado con peticiones completas) |
 | **4a — Catálogo y proveedores** *(hecha)* | `tax_rates`, unidades, categorías, marcas, productos, variantes, historial de precios/costos, proveedores y cotizaciones (comparación por costo total puesto en almacén) | CRUD + historial + CSV; el vendedor ve precios pero no costos |
 | **4b — Núcleo financiero** *(hecha)* | `financial_accounts`, `financial_transactions`, `capital_movements`, `account_transfers`, `Decimal`/`Money`, calculadoras de impuesto y precio | Conciliación de saldos; sin saldos negativos; 1 documento ↔ 1 asiento |
-| 4c — Inventario | `stock_levels`, `stock_movements`, `stock_reservations`, capas FIFO | Invariantes de §3 y concurrencia |
-| 4d — Compras | órdenes, recepciones, costos de llegada, pagos | Costo promedio correcto al recibir |
+| **4c — Inventario** *(hecha)* | `stock_levels`, `stock_movements` (inmutable), ajustes, transferencias, kardex, conciliación. `stock_reservations` llega con los pedidos (4e) y las capas FIFO quedan preparadas | Saldo = suma de movimientos; sin stock negativo ni sacar lo reservado |
+| **4d — Compras** *(hecha)* | órdenes, líneas con impuesto recuperable o no, costos de llegada, recepciones parciales, pagos ligados al libro de caja | Costo promedio correcto al recibir; compra ≠ gasto |
 | 4e — Clientes y pedidos | `customers`, `orders` y relacionadas, devoluciones | Ciclo de §2 completo, sin doble registro |
 | 4f — Gastos e investigación | `expenses`, `research_*` | Ganancia bruta/neta cuadran con casos a mano |
 | 4g — Dashboard real | Indicadores y gráficos | Ninguna cifra estática |
@@ -116,3 +116,10 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 * **Base de datos**: `financial_transactions` admite SELECT/INSERT/UPDATE (se anula, no se borra); `product_price_history` y `supplier_prices` son solo SELECT/INSERT (verificado por `db-check.php`).
 * **Libro de caja**: el saldo no se almacena; `FinanceService::post()` es el único punto que inserta asientos y lo reutilizarán cobros, pagos y gastos.
 * `source_type` es texto validado por la aplicación para que las etapas siguientes añadan orígenes sin alterar la tabla.
+
+## 9. Notas de las etapas 4c/4d
+* **Disponible** = físico − reservado, calculado en las consultas (no hay columna que pueda desincronizarse).
+* `InventoryService::move()` es el único punto que cambia el físico: bloquea la fila, valida, actualiza el saldo y escribe el movimiento en la misma transacción. Salidas al costo promedio; entradas recalculan el promedio ponderado.
+* **Costo puesto en almacén** (por unidad, moneda base) = precio × tipo de cambio de la orden + impuesto no recuperable + costos de llegada repartidos por valor de línea (`costos × valor_unitario / valor_total_orden`). Los costos de llegada se bloquean tras la primera recepción para que el reparto sea coherente.
+* **Pagos**: se hacen en moneda base contra el total de la orden convertido al tipo de cambio del documento; el total a pagar incluye los costos de llegada registrados. Cada pago ↔ un asiento del libro de caja; se anula desde la orden, no desde Finanzas. La diferencia cambiaria se difiere a una etapa posterior.
+* Una orden con mercancía recibida o pagos activos no se cancela. Recepciones y pagos son solo-INSERT a nivel de base de datos.

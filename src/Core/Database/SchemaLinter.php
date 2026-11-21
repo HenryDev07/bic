@@ -17,7 +17,7 @@ final class SchemaLinter
     private const NO_BUSINESS_ID = ['businesses', 'roles', 'permissions', 'role_permissions', 'user_roles', 'login_attempts'];
 
     /** Columnas *_id polimórficas o de referencia débil (sin FK por diseño). */
-    private const WEAK_REFERENCES = ['entity_id', 'result_id', 'tax_id'];
+    private const WEAK_REFERENCES = ['entity_id', 'result_id', 'tax_id', 'reference_id'];
 
     /**
      * @return array{errors:list<string>,warnings:list<string>,tables:int}

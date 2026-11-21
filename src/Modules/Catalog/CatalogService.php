@@ -14,6 +14,7 @@ final class CatalogService
     public const ENTITIES = [
         'categories' => ['table' => 'categories', 'title' => 'Categorías', 'singular' => 'categoría', 'order' => 'name', 'cols' => ['name' => 'Nombre']],
         'brands'     => ['table' => 'brands', 'title' => 'Marcas', 'singular' => 'marca', 'order' => 'name', 'cols' => ['name' => 'Nombre']],
+        'warehouses' => ['table' => 'warehouses', 'title' => 'Almacenes', 'singular' => 'almacén', 'order' => 'code', 'cols' => ['code' => 'Código', 'name' => 'Nombre']],
         'units'      => ['table' => 'units', 'title' => 'Unidades', 'singular' => 'unidad', 'order' => 'code', 'cols' => ['code' => 'Código', 'name' => 'Nombre']],
         'tax-rates'  => ['table' => 'tax_rates', 'title' => 'Impuestos', 'singular' => 'impuesto', 'order' => 'name', 'cols' => ['name' => 'Nombre', 'rate' => 'Tasa %']],
     ];
@@ -66,12 +67,17 @@ final class CatalogService
         }
         $values['name'] = $name;
 
-        if ($entity === 'units') {
-            $code = mb_strtolower(trim((string) ($input['code'] ?? '')));
-            if (!preg_match('/^[a-z0-9._-]{1,10}$/', $code)) {
-                $errors['code'] = 'El código usa 1–10 letras, números, punto o guion.';
+        if ($entity === 'units' || $entity === 'warehouses') {
+            $wh = $entity === 'warehouses';
+            $raw = trim((string) ($input['code'] ?? ''));
+            $code = $wh ? mb_strtoupper($raw) : mb_strtolower($raw);
+            if (!preg_match($wh ? '/^[A-Z0-9._-]{1,30}$/' : '/^[a-z0-9._-]{1,10}$/', $code)) {
+                $errors['code'] = $wh ? 'El código usa 1–30 letras, números, punto o guion.' : 'El código usa 1–10 letras, números, punto o guion.';
             }
             $values['code'] = $code;
+            if ($wh && $old !== null && (int) $old['is_default'] === 1 && $values['is_active'] === 0) {
+                $errors['is_active'] = 'El almacén predeterminado debe estar activo.';
+            }
         }
 
         $makeDefault = false;
@@ -93,7 +99,7 @@ final class CatalogService
             }
         }
 
-        $unique = $entity === 'units' ? 'code' : 'name';
+        $unique = isset($cfg['cols']['code']) ? 'code' : 'name';
         if (!isset($errors[$unique]) && $this->taken($biz, $cfg['table'], $unique, (string) $values[$unique], $id)) {
             $errors[$unique] = 'Ya existe un registro con ese valor.';
         }

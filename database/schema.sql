@@ -455,10 +455,177 @@ CREATE TABLE IF NOT EXISTS account_transfers (
   FOREIGN KEY (in_transaction_id) REFERENCES financial_transactions (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ===== 0007_inventory =====
+-- 0007: inventario. El stock físico SOLO cambia mediante stock_movements (inmutable, solo INSERT).
+-- stock_levels es el saldo vigente por almacén y variante; disponible = quantity − reserved_quantity (se calcula, no se guarda).
+-- reserved_quantity la usarán los pedidos (etapa 4e); mientras tanto vale 0.
+
+CREATE TABLE IF NOT EXISTS stock_levels (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  warehouse_id BIGINT UNSIGNED NOT NULL,
+  variant_id BIGINT UNSIGNED NOT NULL,
+  quantity DECIMAL(14,3) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  reserved_quantity DECIMAL(14,3) NOT NULL DEFAULT 0 CHECK (reserved_quantity >= 0),
+  avg_cost DECIMAL(14,4) NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_stock_levels (warehouse_id, variant_id),
+  KEY idx_stock_levels_variant (variant_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (warehouse_id) REFERENCES warehouses (id),
+  FOREIGN KEY (variant_id) REFERENCES product_variants (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- quantity con signo (+entra, −sale). unit_cost = costo por unidad en moneda base al momento del movimiento.
+-- movement_type (validado por la aplicación): purchase_receipt, adjustment_in, adjustment_out, transfer_in, transfer_out
+-- (las etapas siguientes añaden sale, return…).
+CREATE TABLE IF NOT EXISTS stock_movements (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  warehouse_id BIGINT UNSIGNED NOT NULL,
+  variant_id BIGINT UNSIGNED NOT NULL,
+  movement_type VARCHAR(30) NOT NULL,
+  quantity DECIMAL(14,3) NOT NULL CHECK (quantity <> 0),
+  unit_cost DECIMAL(14,4) NOT NULL DEFAULT 0,
+  balance_after DECIMAL(14,3) NOT NULL,
+  avg_cost_after DECIMAL(14,4) NOT NULL DEFAULT 0,
+  reference_type VARCHAR(30) NULL,
+  reference_id BIGINT UNSIGNED NULL,
+  reason VARCHAR(255) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_stock_mov_variant (business_id, variant_id, id),
+  KEY idx_stock_mov_warehouse (business_id, warehouse_id, id),
+  KEY idx_stock_mov_ref (reference_type, reference_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (warehouse_id) REFERENCES warehouses (id),
+  FOREIGN KEY (variant_id) REFERENCES product_variants (id),
+  FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ===== 0008_purchasing =====
+-- 0008: compras. Compra = inventario (activo), no gasto. Los costos de llegada se capitalizan al costo de lo recibido.
+-- Importes de líneas en la moneda de la orden; cost_lines y pagos en moneda base. Totales no se guardan (se calculan de las líneas).
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  po_number VARCHAR(30) NOT NULL,
+  supplier_id BIGINT UNSIGNED NOT NULL,
+  warehouse_id BIGINT UNSIGNED NOT NULL,
+  status ENUM('draft','ordered','partial','received','cancelled') NOT NULL DEFAULT 'draft',
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  exchange_rate DECIMAL(18,8) NOT NULL DEFAULT 1,
+  ordered_on DATE NULL,
+  expected_on DATE NULL,
+  notes VARCHAR(500) NULL,
+  cancel_reason VARCHAR(255) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_po_number (business_id, po_number),
+  KEY idx_po_status (business_id, status),
+  KEY idx_po_supplier (supplier_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (supplier_id) REFERENCES suppliers (id),
+  FOREIGN KEY (warehouse_id) REFERENCES warehouses (id),
+  FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Impuesto de la línea: instantánea (tasa, recuperable o no). El no recuperable se capitaliza al costo.
+CREATE TABLE IF NOT EXISTS purchase_order_lines (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  purchase_order_id BIGINT UNSIGNED NOT NULL,
+  variant_id BIGINT UNSIGNED NOT NULL,
+  quantity DECIMAL(14,3) NOT NULL CHECK (quantity > 0),
+  received_quantity DECIMAL(14,3) NOT NULL DEFAULT 0,
+  unit_price DECIMAL(14,4) NOT NULL,
+  tax_rate DECIMAL(7,4) NOT NULL DEFAULT 0,
+  tax_recoverable TINYINT(1) NOT NULL DEFAULT 1,
+  line_subtotal DECIMAL(14,2) NOT NULL,
+  tax_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_po_line_variant (purchase_order_id, variant_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders (id),
+  FOREIGN KEY (variant_id) REFERENCES product_variants (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Fletes, aranceles, seguros… en moneda base. Se reparten entre las líneas por valor al recibir.
+CREATE TABLE IF NOT EXISTS purchase_cost_lines (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  purchase_order_id BIGINT UNSIGNED NOT NULL,
+  kind VARCHAR(20) NOT NULL,
+  description VARCHAR(150) NULL,
+  amount DECIMAL(14,2) NOT NULL CHECK (amount > 0),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS purchase_receipts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  purchase_order_id BIGINT UNSIGNED NOT NULL,
+  received_on DATE NOT NULL,
+  notes VARCHAR(255) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_receipts_po (purchase_order_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders (id),
+  FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- unit_cost = costo puesto en almacén (moneda base), congelado al recibir. Cada línea ↔ un movimiento de stock.
+CREATE TABLE IF NOT EXISTS purchase_receipt_lines (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  receipt_id BIGINT UNSIGNED NOT NULL,
+  order_line_id BIGINT UNSIGNED NOT NULL,
+  variant_id BIGINT UNSIGNED NOT NULL,
+  quantity DECIMAL(14,3) NOT NULL CHECK (quantity > 0),
+  unit_cost DECIMAL(14,4) NOT NULL,
+  stock_movement_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_receipt_line_movement (stock_movement_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (receipt_id) REFERENCES purchase_receipts (id),
+  FOREIGN KEY (order_line_id) REFERENCES purchase_order_lines (id),
+  FOREIGN KEY (variant_id) REFERENCES product_variants (id),
+  FOREIGN KEY (stock_movement_id) REFERENCES stock_movements (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- El importe vive solo en el asiento del libro de caja (moneda base); aquí el vínculo 1:1.
+CREATE TABLE IF NOT EXISTS purchase_payments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  purchase_order_id BIGINT UNSIGNED NOT NULL,
+  financial_transaction_id BIGINT UNSIGNED NOT NULL,
+  notes VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_purchase_payment_tx (financial_transaction_id),
+  KEY idx_purchase_payment_po (purchase_order_id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders (id),
+  FOREIGN KEY (financial_transaction_id) REFERENCES financial_transactions (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO schema_migrations (version, checksum) VALUES
   ('0001_core_business', '46e44138dac300ec8801b840b8f1b6808486a79537167727c2f6be558acf47e4'),
   ('0002_security', '478534742a74e5c80c19c1b829ea228e2789f849ac5bfeaaf24ab754dc670497'),
   ('0003_audit_idempotency', '655cd8e3bb90eb04a7a9e88a5c72e04060a373fe4ade2f7ba0a39ddbb3add03a'),
   ('0004_catalog', '3f03cd1084c92d8032f28c059745076ab0e29ecc87664e38c680a126a902d8f4'),
   ('0005_suppliers', '901e7120d9edb8f89f9576aa142ebaaad4b68d4bb1b026f24573bba897fdebc8'),
-  ('0006_finance_core', '111c48bc66cb33b9e06ea0afbb28bb8e5c340ea020d25d3dbd3da6796b84a0a0');
+  ('0006_finance_core', '111c48bc66cb33b9e06ea0afbb28bb8e5c340ea020d25d3dbd3da6796b84a0a0'),
+  ('0007_inventory', '5639c6d7698e26df942ec4c4cf30fb7a2d31d09999c4c48e37b0185c12bf6650'),
+  ('0008_purchasing', 'b42df7914e35d990e3666fa23ebc0d9d8f7b1f184d13be9e35d2be2ade2484e2');

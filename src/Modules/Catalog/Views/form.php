@@ -6,9 +6,9 @@
 <form method="post" action="<?= $e($url($action)) ?>" class="card form form-wide">
   <?= $csrf() ?>
   <div class="grid grid-2">
-    <?php if ($entity === 'units'): ?>
+    <?php if (isset($cfg['cols']['code'])): ?>
     <label class="field"><span>Código</span>
-      <input class="input<?= isset($errors['code']) ? ' invalid' : '' ?>" name="code" value="<?= $e($values['code'] ?? '') ?>" maxlength="10" required>
+      <input class="input<?= isset($errors['code']) ? ' invalid' : '' ?>" name="code" value="<?= $e($values['code'] ?? '') ?>" maxlength="30" required>
       <?php if (isset($errors['code'])): ?><small class="error"><?= $e($errors['code']) ?></small><?php endif; ?>
     </label>
     <?php endif; ?>

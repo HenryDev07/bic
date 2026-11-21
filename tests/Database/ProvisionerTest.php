@@ -17,7 +17,7 @@ final class ProvisionerTest extends TestCase
             'business_intelligence_commerce',
             'bic_app',
             'localhost',
-            ['users', 'audit_logs', 'stock_movements', 'schema_migrations', 'settings', 'financial_transactions', 'product_price_history', 'supplier_prices']
+            ['users', 'audit_logs', 'stock_movements', 'schema_migrations', 'settings', 'financial_transactions', 'product_price_history', 'supplier_prices', 'purchase_receipts', 'purchase_receipt_lines', 'purchase_payments']
         );
     }
 
@@ -45,6 +45,9 @@ final class ProvisionerTest extends TestCase
         $this->assertStringContainsString("GRANT SELECT, INSERT, UPDATE ON `business_intelligence_commerce`.`financial_transactions`", $sql);
         $this->assertStringContainsString("GRANT SELECT, INSERT ON `business_intelligence_commerce`.`product_price_history`", $sql);
         $this->assertStringContainsString("GRANT SELECT, INSERT ON `business_intelligence_commerce`.`supplier_prices`", $sql);
+        foreach (['stock_movements', 'purchase_receipts', 'purchase_receipt_lines', 'purchase_payments'] as $t) {
+            $this->assertStringContainsString("GRANT SELECT, INSERT ON `business_intelligence_commerce`.`{$t}`", $sql);
+        }
     }
 
     public function testGrantsAreResetFirstAndNeverTargetRoot(): void

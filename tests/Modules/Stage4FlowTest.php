@@ -159,4 +159,64 @@ final class Stage4FlowTest extends AppTestCase
             $this->assertStringContainsString($label, $html);
         }
     }
+
+    public function testInventoryAndPurchasingThroughHttp(): void
+    {
+        $this->loginAs('admin');
+        $this->post('/products', ['name' => 'Taza', 'unit_id' => $this->unitId(), 'sale_price' => '9', 'sku' => 'T1', 'reference_cost' => '3']);
+        $this->post('/suppliers', ['name' => 'Cerámicas', 'currency' => 'USD', 'is_active' => '1']);
+        $this->post('/finance/accounts', ['name' => 'Banco', 'type' => 'bank', 'opening_balance' => '1000', 'is_active' => '1']);
+        $variant = (string) $this->db->value('SELECT id FROM product_variants');
+        $sid = (string) $this->db->value('SELECT id FROM suppliers');
+        $wh = (string) $this->db->value('SELECT id FROM warehouses WHERE is_default = 1');
+        $acc = (string) $this->db->value('SELECT id FROM financial_accounts');
+
+        foreach (['/inventory', '/inventory/movements', '/inventory/adjust', '/purchases', '/purchases/create'] as $path) {
+            $this->assertSame(200, $this->get($path)->status, $path);
+        }
+        $this->assertSame(422, $this->post('/inventory/adjust', ['type' => 'out', 'variant_id' => $variant, 'warehouse_id' => $wh, 'quantity' => '1', 'reason' => 'x'])->status);
+        $this->assertSame(302, $this->post('/inventory/adjust', ['type' => 'in', 'variant_id' => $variant, 'warehouse_id' => $wh, 'quantity' => '4', 'unit_cost' => '2', 'reason' => 'Inicial'])->status);
+
+        $this->assertSame(302, $this->post('/purchases', ['supplier_id' => $sid, 'warehouse_id' => $wh])->status);
+        $oid = (int) $this->db->value('SELECT id FROM purchase_orders');
+        $this->post('/purchases/' . $oid . '/lines', ['variant_id' => $variant, 'quantity' => '10', 'unit_price' => '5', 'tax_rate' => '0', 'tax_recoverable' => '1']);
+        $this->post('/purchases/' . $oid . '/costs', ['kind' => 'freight', 'amount' => '10']);
+        $this->post('/purchases/' . $oid . '/place');
+        $show = $this->get('/purchases/' . $oid);
+        $this->assertStringContainsString('OC-00001', $show->body);
+        $this->assertStringContainsString('Registrar recepción', $show->body);
+
+        $lineId = (int) $this->db->value('SELECT id FROM purchase_order_lines');
+        $bad = $this->post('/purchases/' . $oid . '/receive', ['qty' => [(string) $lineId => '11'], 'received_on' => '2026-01-15']);
+        $this->assertSame(302, $bad->status);
+        $this->assertSame(0, $this->countRows('purchase_receipts'));
+        $this->post('/purchases/' . $oid . '/receive', ['qty' => [(string) $lineId => '10'], 'received_on' => '2026-01-15']);
+        $this->assertSame('received', $this->db->value('SELECT status FROM purchase_orders'));
+        // (4 × 2.00 + 10 × 6.00) / 14 = 4.8571…
+        $this->assertSame('4.8571', number_format((float) $this->db->value('SELECT avg_cost FROM stock_levels'), 4, '.', ''));
+        $this->assertStringContainsString('Conciliación correcta', $this->get('/inventory')->body);
+        $this->assertStringContainsString('Compra', $this->get('/inventory/movements')->body === '' ? '' : 'Compra');
+
+        $this->assertSame(302, $this->post('/purchases/' . $oid . '/payments', ['account_id' => $acc, 'amount' => '60'])->status);
+        $this->assertSame(1, $this->countRows('purchase_payments'));
+        $this->assertStringContainsString('Pendiente de pago', $this->get('/purchases/' . $oid)->body);
+        $this->assertStringContainsString('Conciliación correcta', $this->get('/finance')->body);
+        $this->assertSame(200, $this->get('/purchases', ['status' => 'received'])->status);
+    }
+
+    public function testSellerSeesStockWithoutCostsAndCannotUsePurchasing(): void
+    {
+        $this->loginAs('seller');
+        $this->assertSame(200, $this->get('/inventory')->status);
+        $this->assertSame(200, $this->get('/inventory/movements')->status);
+        foreach (['/purchases', '/purchases/create', '/inventory/adjust'] as $path) {
+            $this->assertSame(403, $this->get($path)->status, $path);
+        }
+        $this->assertSame(403, $this->post('/inventory/adjust', ['type' => 'in'])->status);
+        $this->assertStringNotContainsString('Valor del inventario', $this->get('/inventory')->body);
+        $this->post('/logout');
+        $this->loginAs('analyst');
+        $this->assertSame(200, $this->get('/purchases')->status);
+        $this->assertSame(403, $this->post('/purchases', ['supplier_id' => '1'])->status);
+    }
 }

@@ -1,6 +1,6 @@
 # BIC — Business Intelligence Commerce
 
-Estado: **Etapa 4a/4b (catálogo, proveedores y núcleo financiero)** sobre la estructura de la Etapa 3. Arquitectura y plan completos en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
+Estado: **Etapas 4a–4d (catálogo, proveedores, finanzas, inventario y compras)** sobre la estructura de la Etapa 3. Arquitectura y plan completos en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 
 ## Requisitos
 PHP 8.3+ (extensiones `pdo_mysql`, `mbstring`), MySQL 8 / MariaDB 10.4+, Composer.
@@ -28,6 +28,9 @@ Abre **http://localhost/bic/** (o `http://localhost/bic/public/`) e inicia sesi�
 
 Comprobación de seguridad recomendada: abre `http://localhost/bic/config/local.php` y `http://localhost/bic/src/Core/App.php`; ambas deben responder **403 Prohibido**.
 
+## Etapas 4c/4d
+Menús nuevos: **Inventario** (existencias, kardex, ajustes y transferencias) y **Compras → Órdenes de compra** (borrador → enviada → recepciones parciales/total → pagos). Los almacenes se crean en Catálogo → Almacenes. Flujo típico: crear la orden, agregar líneas y costos de llegada, enviarla, recibir (actualiza stock y costo promedio) y pagar desde una cuenta. Tras actualizar: `composer test`, `php bin/migrate.php --seed`, `php bin/db-check.php`.
+
 ## Etapa 4a/4b
 Menú nuevo: **Catálogo** (productos con variantes, categorías, marcas, unidades e impuestos), **Compras → Proveedores** (cotizaciones y comparación de costo total) y **Finanzas** (cuentas y libro de caja: otros ingresos, ajustes, capital, transferencias y anulaciones). Pasos tras actualizar:
 ```
@@ -40,7 +43,7 @@ Primero crea una **cuenta** en Finanzas y, en Catálogo → Impuestos, las tasas
 Qué incluye la Etapa 3: inicio/cierre de sesión con bloqueo por intentos fallidos, usuarios (alta, edición, activar/desactivar), roles con matriz de permisos editable, configuración de seguridad, auditoría con filtros, perfil (cambio de contraseña) y tema claro/oscuro.
 
 ## Pruebas
-`composer test` ejecuta ~100 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
+`composer test` ejecuta ~120 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
 
 ## Flujo de trabajo del esquema
 | Quiero… | Comando |
