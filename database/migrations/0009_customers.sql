@@ -1,0 +1,17 @@
+-- 0009: clientes.
+CREATE TABLE IF NOT EXISTS customers (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  tax_id VARCHAR(50) NULL,
+  email VARCHAR(190) NULL,
+  phone VARCHAR(50) NULL,
+  address VARCHAR(255) NULL,
+  notes TEXT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_customers_name (business_id, name),
+  FOREIGN KEY (business_id) REFERENCES businesses (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

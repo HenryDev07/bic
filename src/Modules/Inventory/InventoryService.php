@@ -74,6 +74,28 @@ final class InventoryService
         );
     }
 
+    /** Reserva stock para un pedido (sube reserved_quantity). Dentro de una transacción. No puede superar el disponible. */
+    public function reserve(int $biz, int $warehouseId, int $variantId, Decimal $qty): void
+    {
+        $level = $this->lockLevel($biz, $warehouseId, $variantId);
+        $available = Decimal::from($level['quantity'], 3)->sub(Decimal::from($level['reserved_quantity'], 3));
+        if ($qty->compare($available) > 0) {
+            throw new InsufficientStock('Stock insuficiente para reservar: disponible ' . $available->format() . ', se pidieron ' . $qty->format() . '.');
+        }
+        $this->db->execute('UPDATE stock_levels SET reserved_quantity = ? WHERE id = ?', [Decimal::from($level['reserved_quantity'], 3)->add($qty)->toString(), $level['id']]);
+    }
+
+    /** Libera una reserva (baja reserved_quantity). Dentro de una transacción. */
+    public function release(int $biz, int $warehouseId, int $variantId, Decimal $qty): void
+    {
+        $level = $this->lockLevel($biz, $warehouseId, $variantId);
+        $new = Decimal::from($level['reserved_quantity'], 3)->sub($qty);
+        if ($new->isNegative()) {
+            throw new \RuntimeException('La reserva a liberar supera lo reservado.');
+        }
+        $this->db->execute('UPDATE stock_levels SET reserved_quantity = ? WHERE id = ?', [$new->toString(), $level['id']]);
+    }
+
     /** Fila de stock_levels bloqueada (se crea si no existe). Bloquear siempre en orden de almacén evita bloqueos mutuos. @return array<string,mixed> */
     public function lockLevel(int $biz, int $warehouseId, int $variantId): array
     {
@@ -319,6 +341,17 @@ final class InventoryService
             $last = $this->db->value('SELECT balance_after FROM stock_movements WHERE warehouse_id = ? AND variant_id = ? ORDER BY id DESC LIMIT 1', [$l['warehouse_id'], $l['variant_id']]);
             if ($last !== null && !Decimal::from($last, 3)->equals($qty)) {
                 $issues[] = "Variante {$l['variant_id']} / almacén {$l['warehouse_id']}: el último saldo del kardex no coincide con el stock.";
+            }
+        }
+
+        $res = [];
+        foreach ($this->db->select("SELECT warehouse_id, variant_id, SUM(quantity) AS total FROM stock_reservations WHERE business_id = ? AND status = 'active' GROUP BY warehouse_id, variant_id", [$biz]) as $r) {
+            $res[$r['warehouse_id'] . ':' . $r['variant_id']] = Decimal::from($r['total'], 3);
+        }
+        foreach ($this->db->select('SELECT warehouse_id, variant_id, reserved_quantity FROM stock_levels WHERE business_id = ?', [$biz]) as $l) {
+            $key = $l['warehouse_id'] . ':' . $l['variant_id'];
+            if (!Decimal::from($l['reserved_quantity'], 3)->equals($res[$key] ?? Decimal::zero(3))) {
+                $issues[] = "Variante {$l['variant_id']} / almacén {$l['warehouse_id']}: lo reservado no coincide con las reservas activas.";
             }
         }
 

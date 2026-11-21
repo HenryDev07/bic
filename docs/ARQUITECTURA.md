@@ -99,7 +99,7 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **4b — Núcleo financiero** *(hecha)* | `financial_accounts`, `financial_transactions`, `capital_movements`, `account_transfers`, `Decimal`/`Money`, calculadoras de impuesto y precio | Conciliación de saldos; sin saldos negativos; 1 documento ↔ 1 asiento |
 | **4c — Inventario** *(hecha)* | `stock_levels`, `stock_movements` (inmutable), ajustes, transferencias, kardex, conciliación. `stock_reservations` llega con los pedidos (4e) y las capas FIFO quedan preparadas | Saldo = suma de movimientos; sin stock negativo ni sacar lo reservado |
 | **4d — Compras** *(hecha)* | órdenes, líneas con impuesto recuperable o no, costos de llegada, recepciones parciales, pagos ligados al libro de caja | Costo promedio correcto al recibir; compra ≠ gasto |
-| 4e — Clientes y pedidos | `customers`, `orders` y relacionadas, devoluciones | Ciclo de §2 completo, sin doble registro |
+| **4e — Clientes y pedidos** *(hecha)* | `customers`, `orders`, `order_lines`, `stock_reservations`, `order_status_history`, `order_payments`, `order_returns(+lines)`; reservas, entrega con costo congelado, anticipos/cobros/reembolsos ligados al libro, devoluciones proporcionales, idempotencia de cobros | Ciclo de §2 completo, sin doble registro |
 | 4f — Gastos e investigación | `expenses`, `research_*` | Ganancia bruta/neta cuadran con casos a mano |
 | 4g — Dashboard real | Indicadores y gráficos | Ninguna cifra estática |
 | 5 — Inteligencia y reportes | Clasificación, ABC, rotación, equilibrio, PDF/Excel/CSV | Reportes = dashboard |
@@ -123,3 +123,11 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 * **Costo puesto en almacén** (por unidad, moneda base) = precio × tipo de cambio de la orden + impuesto no recuperable + costos de llegada repartidos por valor de línea (`costos × valor_unitario / valor_total_orden`). Los costos de llegada se bloquean tras la primera recepción para que el reparto sea coherente.
 * **Pagos**: se hacen en moneda base contra el total de la orden convertido al tipo de cambio del documento; el total a pagar incluye los costos de llegada registrados. Cada pago ↔ un asiento del libro de caja; se anula desde la orden, no desde Finanzas. La diferencia cambiaria se difiere a una etapa posterior.
 * Una orden con mercancía recibida o pagos activos no se cancela. Recepciones y pagos son solo-INSERT a nivel de base de datos.
+
+## 10. Notas de la etapa 4e
+- Reserva de stock según `order_reserve_stock_on` (pending | confirmed | never; por defecto confirmed), editable en Pedidos por quien tenga `settings.edit`. Invariante: `reserved_quantity` = suma de reservas activas (lo verifica `InventoryService::reconcile`).
+- La salida de stock y el ingreso ocurren al **entregar** (`delivered_at`); `unit_cost_snapshot` congela el costo promedio. Mostrador: pendiente → entregado directo, sin reserva.
+- Dinero recibido antes de entregar = `deposit` (pasivo); después = `payment`; `refund` saca dinero. Cancelar exige anticipos reembolsados. Se anula desde el pedido (`sales.refund`), nunca desde el libro.
+- Devoluciones: importes proporcionales; la última devolución de una línea toma el resto exacto. Con reposición, el stock vuelve al costo original. El reembolso en dinero es un paso aparte (saldo a favor del cliente).
+- Permisos: `sales.create` (borrador, líneas, enviar, confirmar), `sales.edit` (preparar, entregar), `sales.pay`, `sales.refund` (reembolsos y anulaciones), `sales.cancel`, `sales.return`.
+- Ventas solo en moneda base (las cuentas ya lo son).

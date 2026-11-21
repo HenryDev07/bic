@@ -370,6 +370,9 @@ final class FinanceService
         if (($n = $count("SELECT COUNT(*) FROM financial_transactions t WHERE t.business_id = ? AND t.source_type = 'purchase_payment' AND NOT EXISTS (SELECT 1 FROM purchase_payments p WHERE p.financial_transaction_id = t.id)")) > 0) {
             $issues[] = "{$n} asiento(s) de pago a proveedor sin pago registrado.";
         }
+        if (($n = $count("SELECT COUNT(*) FROM financial_transactions t WHERE t.business_id = ? AND t.source_type = 'order_payment' AND NOT EXISTS (SELECT 1 FROM order_payments p WHERE p.financial_transaction_id = t.id)")) > 0) {
+            $issues[] = "{$n} asiento(s) de cobro de pedido sin cobro registrado.";
+        }
         foreach ($this->accounts($biz) as $a) {
             if (Decimal::from($a['balance'], 2)->isNegative()) {
                 $issues[] = 'La cuenta «' . $a['name'] . '» tiene saldo negativo.';

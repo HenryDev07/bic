@@ -157,7 +157,7 @@ final class InventoryPurchasingTest extends DatabaseTestCase
         $this->assertSame(1, $this->adjust(['type' => 'out', 'variant_id' => (string) $v, 'quantity' => '2', 'reason' => 'x'])[0]);
         $this->assertSame('8.000', $this->n($this->level($v)['quantity'], 3));
         $this->assertSame(2, $this->countRows('stock_movements'), 'los intentos fallidos no dejan rastro');
-        $this->assertSame([], $this->inv()->reconcile($this->businessId()));
+        $this->assertCount(1, $this->inv()->reconcile($this->businessId()), 'la reserva forzada a mano no tiene reservas activas que la respalden: la conciliación lo detecta');
     }
 
     public function testAdjustValidation(): void
