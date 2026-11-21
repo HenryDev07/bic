@@ -12,13 +12,16 @@ use InvalidArgumentException;
  *
  * Privilegios de bic_app: solo SELECT/INSERT/UPDATE/DELETE por tabla.
  * Nunca CREATE, ALTER, DROP, INDEX, REFERENCES ni GRANT.
- * Las tablas de bitácora inmutable (audit_logs, stock_movements) solo reciben
- * SELECT e INSERT: la propia base impide editarlas o borrarlas.
+ * Las tablas de bitácora inmutable (audit_logs, stock_movements, historiales de precios y
+ * cotizaciones) solo reciben SELECT e INSERT; el libro de caja no admite DELETE.
  */
 final class Provisioner
 {
     /** Solo SELECT + INSERT (se aplican únicamente a las que existan). */
-    public const APPEND_ONLY = ['audit_logs', 'stock_movements'];
+    public const APPEND_ONLY = ['audit_logs', 'stock_movements', 'product_price_history', 'supplier_prices'];
+
+    /** SELECT + INSERT + UPDATE (sin DELETE): los asientos del libro de caja se anulan, nunca se borran. */
+    public const NO_DELETE = ['financial_transactions'];
 
     /** Solo SELECT. */
     public const READ_ONLY = ['schema_migrations'];
@@ -81,6 +84,7 @@ final class Provisioner
             $privileges = match (true) {
                 in_array($table, self::READ_ONLY, true)   => 'SELECT',
                 in_array($table, self::APPEND_ONLY, true) => 'SELECT, INSERT',
+                in_array($table, self::NO_DELETE, true)   => 'SELECT, INSERT, UPDATE',
                 default                                   => 'SELECT, INSERT, UPDATE, DELETE',
             };
             $statements[] = "GRANT {$privileges} ON `{$db}`.`{$table}` TO {$account}";

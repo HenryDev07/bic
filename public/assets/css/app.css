@@ -185,3 +185,18 @@ small.muted { font-size: .8rem; }
   .user-name { display: none; }
   .toolbar .input { max-width: none; }
 }
+
+/* Etapa 4: pestañas, filas anuladas, formularios en línea */
+.tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tab { padding: .4rem .9rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); text-decoration: none; font-size: .88rem; }
+.tab.active, .tab:hover { background: var(--primary-soft); color: var(--primary-strong); border-color: var(--primary-strong); }
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.voided td { opacity: .55; text-decoration: line-through; }
+.voided td .badge, .voided td .muted { text-decoration: none; }
+.inline-form { display: inline-flex; gap: .4rem; align-items: center; }
+.inline-form .input { width: 9rem; }
+.card-title { padding: 1rem 1rem 0; margin: 0; font-size: 1rem; }
+.card-pad { padding: 1rem; margin: 0; }
+textarea.input { resize: vertical; }
+.toolbar .field { flex: 1 1 200px; margin: 0; }
+.toolbar .field .input { flex: none; width: 100%; max-width: none; }

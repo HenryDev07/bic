@@ -29,4 +29,4 @@ INSERT IGNORE INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
 WHERE r.code = 'analyst'
   AND ((p.action = 'view' AND p.module NOT IN ('users', 'roles', 'settings', 'audit'))
-       OR p.code IN ('ai.use', 'reports.export'));
+       OR p.code IN ('ai.use', 'reports.export', 'products.cost'));

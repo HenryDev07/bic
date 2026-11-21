@@ -136,6 +136,12 @@ final class Database
         return (int) $this->pdo()->lastInsertId();
     }
 
+    /** Sufijo de bloqueo de filas: FOR UPDATE en MySQL/MariaDB (SQLite, usado en pruebas, no lo admite). */
+    public function forUpdate(): string
+    {
+        return $this->pdo()->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql' ? ' FOR UPDATE' : '';
+    }
+
     /** Sentencia sin parámetros (DDL, SET, etc.). */
     public function run(string $sql): void
     {

@@ -63,6 +63,9 @@ $check('No puede alterar tablas', $denied($db, 'ALTER TABLE users ADD COLUMN _pr
 $check('No puede borrar tablas', $denied($db, 'DROP TABLE users'));
 $check('No puede editar audit_logs', $denied($db, 'UPDATE audit_logs SET action = action WHERE id = 0'));
 $check('No puede borrar de audit_logs', $denied($db, 'DELETE FROM audit_logs WHERE id = 0'));
+$check('No puede borrar asientos del libro de caja', $denied($db, 'DELETE FROM financial_transactions WHERE id = 0'));
+$check('No puede editar el historial de precios', $denied($db, 'UPDATE product_price_history SET kind = kind WHERE id = 0'));
+$check('No puede editar cotizaciones de proveedores', $denied($db, 'UPDATE supplier_prices SET notes = notes WHERE id = 0'));
 
 Cli::line('  Permisos necesarios (deben funcionar):');
 try {

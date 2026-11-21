@@ -8,7 +8,7 @@ Arquitectura completa conservada; **cada etapa crea solo sus tablas, con sus pru
 | Tema | Decisión |
 |---|---|
 | Estilo | Monolito modular MVC + servicios + repositorios; módulos registrables por `module.php` |
-| Dependencias | **Composer desde el inicio**: autoload PSR-4 (`Bic\` → `src/`), PHPUnit 11. `bcmath` se exigirá en la etapa que introduzca `Money` |
+| Dependencias | **Composer desde el inicio**: autoload PSR-4 (`Bic\` → `src/`), PHPUnit 11. Sin `bcmath`: `Decimal`/`Money` (`src/Core/Money`) usan enteros escalados con redondeo half-up y detectan desbordamientos |
 | Negocio | Uno activo; `business_id` en toda tabla de negocio (el linter lo exige) |
 | Moneda | USD base. Documentos en otra moneda guardan `currency` + `exchange_rate DECIMAL(18,8)` por operación |
 | Dinero / cantidades | `DECIMAL(14,2)` importes · `(14,4)` costos unitarios · `(14,3)` cantidades · `(7,4)` tasas. Nunca FLOAT (el linter lo bloquea) |
@@ -95,8 +95,8 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 |---|---|---|
 | **2 — Base** *(hecha)* | Composer, PDO, migrador, `schema.sql` sincronizado, linter, usuario `bic_app`; tablas: `businesses`, `warehouses`, `settings`, `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `login_attempts`, `audit_logs`, `idempotency_keys` | `composer test` verde; `install.php` + `db-check.php` correctos en tu WAMP |
 | **3 — Estructura** *(hecha)* | Router, layout y sidebar morado, login con bloqueo, usuarios, roles con anti-escalada, configuración, auditoría, CSRF, CSP estricta, dashboard base con datos reales | Sin permiso → 403 en servidor (probado con peticiones completas) |
-| 4a — Catálogo y proveedores | `tax_rates`, unidades, categorías, marcas, productos, variantes, precios históricos, proveedores | CRUD + historial + CSV |
-| 4b — Núcleo financiero | `financial_accounts`, `financial_transactions`, `capital_movements`, `account_transfers`, `Money` | Conciliación de saldos |
+| **4a — Catálogo y proveedores** *(hecha)* | `tax_rates`, unidades, categorías, marcas, productos, variantes, historial de precios/costos, proveedores y cotizaciones (comparación por costo total puesto en almacén) | CRUD + historial + CSV; el vendedor ve precios pero no costos |
+| **4b — Núcleo financiero** *(hecha)* | `financial_accounts`, `financial_transactions`, `capital_movements`, `account_transfers`, `Decimal`/`Money`, calculadoras de impuesto y precio | Conciliación de saldos; sin saldos negativos; 1 documento ↔ 1 asiento |
 | 4c — Inventario | `stock_levels`, `stock_movements`, `stock_reservations`, capas FIFO | Invariantes de §3 y concurrencia |
 | 4d — Compras | órdenes, recepciones, costos de llegada, pagos | Costo promedio correcto al recibir |
 | 4e — Clientes y pedidos | `customers`, `orders` y relacionadas, devoluciones | Ciclo de §2 completo, sin doble registro |
@@ -107,3 +107,12 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | 7 — Cierre | Pruebas globales, optimización, manuales | Lista de la sección 21 del prompt en verde |
 
 Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer módulo que los use), copias de seguridad (etapa 7), promociones complejas, garantías y calendario (posponer), facturación fiscal electrónica (fuera de alcance).
+
+## 8. Notas de las etapas 4a/4b
+* **Cantidades y dinero en PHP**: nunca `float`. `Decimal::from()` acepta valores de SQLite/MySQL y los normaliza; `Decimal::fromInput()` interpreta lo que escribe una persona (`1,234.50`, `12,5`).
+* **Impuestos**: tasa en porcentaje; `Exento` (0 %) es la única tasa inicial. Redondeo por línea (`TaxCalculator`).
+* **Precios mínimos** (equilibrio/recomendado) se redondean hacia arriba al centavo.
+* **Permisos nuevos**: `products.view/cost/create/edit`, `catalog.view/manage`, `suppliers.view/create/edit`, `finance.view/create/void/manage`. `products.cost` (costos, márgenes, cotizaciones) no lo tiene el vendedor.
+* **Base de datos**: `financial_transactions` admite SELECT/INSERT/UPDATE (se anula, no se borra); `product_price_history` y `supplier_prices` son solo SELECT/INSERT (verificado por `db-check.php`).
+* **Libro de caja**: el saldo no se almacena; `FinanceService::post()` es el único punto que inserta asientos y lo reutilizarán cobros, pagos y gastos.
+* `source_type` es texto validado por la aplicación para que las etapas siguientes añadan orígenes sin alterar la tabla.

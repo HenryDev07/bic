@@ -12,11 +12,24 @@
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="<?= $e($url('/')) ?>"><span class="brand-mark">BIC</span><span class="brand-name">Business Intelligence<br>Commerce</span></a>
   <nav class="nav" aria-label="Principal">
+    <?php
+    // Solo se marca la opción cuya ruta coincide con más especificidad (/finance/ledger no enciende /finance).
+    $bestPath = '';
+    foreach ($menu as $g) {
+        foreach ($g['items'] as $it) {
+            $p = (string) $it['path'];
+            $hit = $p === '/' ? $currentPath === '/' : ($currentPath === $p || str_starts_with($currentPath, $p . '/'));
+            if ($hit && strlen($p) > strlen($bestPath)) {
+                $bestPath = $p;
+            }
+        }
+    }
+    ?>
     <?php foreach ($menu as $group): ?>
       <details class="nav-group" open>
         <summary><span><?= $e($group['label']) ?></span><?= $icon('chevron', 14) ?></summary>
         <?php foreach ($group['items'] as $item):
-            $active = $item['path'] === '/' ? $currentPath === '/' : ($currentPath === $item['path'] || str_starts_with($currentPath, $item['path'] . '/')); ?>
+            $active = $item['path'] === $bestPath; ?>
           <a class="nav-link<?= $active ? ' active' : '' ?>" href="<?= $e($url($item['path'])) ?>"<?= $active ? ' aria-current="page"' : '' ?>>
             <?= $icon($item['icon']) ?><span><?= $e($item['label']) ?></span>
           </a>

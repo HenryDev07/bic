@@ -8,6 +8,7 @@ use Bic\Core\Audit\AuditLogger;
 use Bic\Core\Auth\AuthService;
 use Bic\Core\Http\HttpException;
 use Bic\Core\Http\Request;
+use Bic\Core\Money\Decimal;
 use Bic\Core\Http\Response;
 use Bic\Core\Http\Router;
 use Bic\Core\Database\Database;
@@ -171,6 +172,7 @@ final class App
             'icon'      => static fn (string $n, int $s = 18): string => Icons::svg($n, $s),
             'csrf'      => fn (): string => $this->csrf->field(),
             'can'       => fn (string $p): bool => $this->can($p),
+            'money'     => static fn (mixed $v, int $d = 2): string => ($n = Decimal::tryFrom($v, $d)) !== null ? $n->format() : '—',
             'local'     => fn (?string $t, string $f = 'd/m/Y H:i'): string => $this->localTime($t, $f),
             'user'      => $this->user,
             'csrfToken' => $this->csrf->token(),

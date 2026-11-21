@@ -17,7 +17,7 @@ final class ProvisionerTest extends TestCase
             'business_intelligence_commerce',
             'bic_app',
             'localhost',
-            ['users', 'audit_logs', 'stock_movements', 'schema_migrations', 'settings']
+            ['users', 'audit_logs', 'stock_movements', 'schema_migrations', 'settings', 'financial_transactions', 'product_price_history', 'supplier_prices']
         );
     }
 
@@ -37,6 +37,14 @@ final class ProvisionerTest extends TestCase
         $this->assertStringContainsString("GRANT SELECT, INSERT ON `business_intelligence_commerce`.`stock_movements`", $sql);
         $this->assertStringContainsString("GRANT SELECT ON `business_intelligence_commerce`.`schema_migrations`", $sql);
         $this->assertStringContainsString("GRANT SELECT, INSERT, UPDATE, DELETE ON `business_intelligence_commerce`.`users`", $sql);
+    }
+
+    public function testLedgerCannotBeDeletedAndHistoriesAreAppendOnly(): void
+    {
+        $sql = implode("\n", $this->statements());
+        $this->assertStringContainsString("GRANT SELECT, INSERT, UPDATE ON `business_intelligence_commerce`.`financial_transactions`", $sql);
+        $this->assertStringContainsString("GRANT SELECT, INSERT ON `business_intelligence_commerce`.`product_price_history`", $sql);
+        $this->assertStringContainsString("GRANT SELECT, INSERT ON `business_intelligence_commerce`.`supplier_prices`", $sql);
     }
 
     public function testGrantsAreResetFirstAndNeverTargetRoot(): void
