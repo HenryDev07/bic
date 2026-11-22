@@ -213,3 +213,9 @@ textarea.input { resize: vertical; }
 .chart-label-left { fill: var(--text); }
 .neg { color: var(--danger); }
 .kv { display: flex; justify-content: space-between; margin: 0 0 .4rem; }
+
+/* Asistente IA */
+.ai-msg { padding: .6rem .8rem; border-radius: var(--radius); margin-bottom: .6rem; }
+.ai-msg p { margin: .2rem 0 0; }
+.ai-user { background: var(--primary-soft); }
+.ai-bot { background: var(--bg); border: 1px solid var(--border); }

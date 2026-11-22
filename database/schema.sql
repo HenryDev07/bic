@@ -862,6 +862,40 @@ CREATE TABLE IF NOT EXISTS research_prices (
   FOREIGN KEY (created_by) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ===== 0013_ai =====
+-- 0013: asistente de IA. Conversaciones por usuario; mensajes inmutables (auditoría). Las herramientas son de solo lectura.
+CREATE TABLE IF NOT EXISTS ai_conversations (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(120) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_ai_conv_user (user_id, id),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- role: user | assistant | tool (llamada a herramienta: nombre y argumentos, nunca los resultados).
+CREATE TABLE IF NOT EXISTS ai_messages (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  business_id BIGINT UNSIGNED NOT NULL,
+  conversation_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  role ENUM('user','assistant','tool') NOT NULL,
+  content TEXT NOT NULL,
+  provider VARCHAR(30) NULL,
+  input_tokens INT UNSIGNED NULL,
+  output_tokens INT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_ai_msg_conv (conversation_id, id),
+  KEY idx_ai_msg_user_day (user_id, role, created_at),
+  FOREIGN KEY (business_id) REFERENCES businesses (id),
+  FOREIGN KEY (conversation_id) REFERENCES ai_conversations (id),
+  FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO schema_migrations (version, checksum) VALUES
   ('0001_core_business', '46e44138dac300ec8801b840b8f1b6808486a79537167727c2f6be558acf47e4'),
   ('0002_security', '478534742a74e5c80c19c1b829ea228e2789f849ac5bfeaaf24ab754dc670497'),
@@ -874,4 +908,5 @@ INSERT IGNORE INTO schema_migrations (version, checksum) VALUES
   ('0009_customers', 'fab32ce377a1f8530dc728877bf858685b99928effb520b2055f59b930a06395'),
   ('0010_orders', '9f18115b6018db536df7e7d52bb2ed15ad3b121c53a30200bc2ab0fdc442a281'),
   ('0011_expenses', 'f6b38e3795235937a4ae1b02c1c1e03aadb35fd96d0657f22619ecf533b77d6a'),
-  ('0012_research', '6c391148eab293630a5397c818cec39d0f516ecdff9a67c35e72caf9599bfc28');
+  ('0012_research', '6c391148eab293630a5397c818cec39d0f516ecdff9a67c35e72caf9599bfc28'),
+  ('0013_ai', '6e050e32056831cc89bc5f72fdc0d2c4bf3e7909afd2de8548f64729f759676b');

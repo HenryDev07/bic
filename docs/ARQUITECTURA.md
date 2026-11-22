@@ -102,7 +102,7 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **4e — Clientes y pedidos** *(hecha)* | `customers`, `orders`, `order_lines`, `stock_reservations`, `order_status_history`, `order_payments`, `order_returns(+lines)`; reservas, entrega con costo congelado, anticipos/cobros/reembolsos ligados al libro, devoluciones proporcionales, idempotencia de cobros | Ciclo de §2 completo, sin doble registro |
 | **4f — Gastos e investigación** *(hecha)* | `expense_categories`, `expenses` (1:1 con el libro), `research_items`, `research_prices` (inmutable); estado de resultados | Ganancia bruta/neta cuadran con casos a mano (probado) |
 | **4g — Dashboard real** *(hecha)* | indicadores por permiso, gráficos SVG del servidor | Cada cifra sale de datos reales y coincide con su módulo |
-| **5 — Inteligencia y reportes** *(hecha)* | 6 reportes (ventas, rentabilidad, por cobrar, inventario, gastos, resultados) en pantalla/CSV/Excel/PDF; análisis ABC, reposición, estancados, márgenes, mejores clientes | Cifras = las de cada módulo; exportes válidos |
+| **5 — Inteligencia y reportes** *(hecha)* | **6 — IA** *(hecha)* | proveedor intercambiable (Anthropic, OpenAI/compatible, modo local), 8 herramientas de solo lectura, conversaciones y mensajes inmutables | Sin SQL libre; la IA no inventa cifras ni excede permisos |
 | 6 — IA | Proveedores intercambiables, contexto, recomendaciones | Funciona con y sin API |
 | 7 — Cierre | Pruebas globales, optimización, manuales | Lista de la sección 21 del prompt en verde |
 
@@ -147,3 +147,10 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 - Permisos: `reports.view` (pantalla), `reports.export` (CSV/Excel/PDF, auditado como `report.export`), `insights.view`. Cada reporte exige además el permiso de su módulo; los que muestran costos exigen `products.cost`.
 - Inteligencia = reglas explícitas y verificables (no predicciones): variación vs período anterior; ABC (A hasta 80 % acumulado); reposición (disponible ≤ mínimo; sugerido = mínimo + 14 días de venta media − disponible); existencias estancadas (días configurables); margen realizado bajo el mínimo configurable; precio de lista bajo el costo; mejores clientes.
 - Nuevos ajustes en Configuración: `insight_min_margin_pct`, `insight_slow_days`. El formulario conserva el valor de cualquier ajuste no enviado.
+
+## 14. Notas de la etapa 6
+- **Sin SQL libre ni escritura**: la IA solo puede invocar un catálogo cerrado de 8 herramientas de lectura (`AiTools`) que reutilizan los servicios de los módulos y devuelven cifras agregadas. Una herramienta se ofrece al modelo solo si el usuario tiene sus permisos y se vuelve a comprobar al ejecutar; argumentos validados (períodos en lista cerrada). Los costos/ganancias exigen `products.cost`.
+- **Datos no confiables**: los resultados vuelven al modelo envueltos como `untrusted_data` y el prompt de sistema ordena ignorar instrucciones dentro de los datos. Aun si el modelo fuera engañado, no existe herramienta que modifique nada.
+- **Privacidad**: no se envían contactos, contraseñas, claves ni SQL. Los resultados de herramientas no se guardan; `ai_messages` es solo-inserción para `bic_app` (guarda pregunta, nombre/argumentos de herramientas y respuesta, con proveedor y tokens). Cada conversación es privada de su usuario. Cada consulta se audita (`ai.ask`).
+- **Límites**: 1000 caracteres por pregunta, 4 rondas de herramientas, `ai_daily_limit` mensajes diarios por usuario (Configuración).
+- **Proveedores**: `config/local.php` → `ai.provider` = `anthropic` | `openai` (con `base_url` sirve para servidores compatibles) y `ai.api_key` (o `BIC_AI_API_KEY`). Sin clave: modo local por palabras clave sobre las mismas herramientas. La salida del modelo siempre se escapa (nunca HTML). Requiere ext-curl para los proveedores externos.

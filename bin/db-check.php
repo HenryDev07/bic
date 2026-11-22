@@ -67,6 +67,7 @@ $check('No puede borrar asientos del libro de caja', $denied($db, 'DELETE FROM f
 $check('No puede borrar movimientos de stock', $denied($db, 'DELETE FROM stock_movements WHERE id = 0'));
 $check('No puede borrar cobros de pedidos', $denied($db, 'DELETE FROM order_payments WHERE id = 0'));
 $check('No puede editar el historial de estados', $denied($db, 'UPDATE order_status_history SET note = note WHERE id = 0'));
+$check('No puede editar mensajes de IA', $denied($db, 'UPDATE ai_messages SET content = content WHERE id = 0'));
 $check('No puede editar recepciones de compra', $denied($db, 'UPDATE purchase_receipts SET notes = notes WHERE id = 0'));
 $check('No puede editar el historial de precios', $denied($db, 'UPDATE product_price_history SET kind = kind WHERE id = 0'));
 $check('No puede editar cotizaciones de proveedores', $denied($db, 'UPDATE supplier_prices SET notes = notes WHERE id = 0'));

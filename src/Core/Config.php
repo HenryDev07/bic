@@ -21,6 +21,10 @@ final class Config
         'app.debug'         => 'BIC_DEBUG',
         'app.url'           => 'BIC_URL',
         'storage.path'      => 'BIC_STORAGE_PATH',
+        'ai.provider'       => 'BIC_AI_PROVIDER',
+        'ai.api_key'        => 'BIC_AI_API_KEY',
+        'ai.model'          => 'BIC_AI_MODEL',
+        'ai.base_url'       => 'BIC_AI_BASE_URL',
     ];
 
     /** @param array<string,mixed> $data */

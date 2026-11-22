@@ -16,6 +16,7 @@ final class SettingsService
         'login_lockout_minutes'    => ['label' => 'Duración del bloqueo por intentos (minutos)', 'min' => 1, 'max' => 1440, 'default' => 15, 'group' => 'security'],
         'password_min_length'      => ['label' => 'Longitud mínima de contraseña', 'min' => 8, 'max' => 72, 'default' => 10, 'group' => 'security'],
         'insight_min_margin_pct'   => ['label' => 'Margen mínimo esperado en el análisis (%)', 'min' => 1, 'max' => 90, 'default' => 20, 'group' => 'insights'],
+        'ai_daily_limit'           => ['label' => 'Mensajes diarios al asistente de IA por usuario', 'min' => 1, 'max' => 1000, 'default' => 50, 'group' => 'ai'],
         'insight_slow_days'        => ['label' => 'Días sin ventas para considerar un producto estancado', 'min' => 7, 'max' => 365, 'default' => 60, 'group' => 'insights'],
     ];
 

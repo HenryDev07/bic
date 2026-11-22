@@ -20,7 +20,7 @@ final class Provisioner
     /** Solo SELECT + INSERT (se aplican únicamente a las que existan). */
     public const APPEND_ONLY = ['audit_logs', 'stock_movements', 'product_price_history', 'supplier_prices',
         'purchase_receipts', 'purchase_receipt_lines', 'purchase_payments',
-        'order_status_history', 'order_payments', 'order_returns', 'order_return_lines', 'research_prices'];
+        'order_status_history', 'order_payments', 'order_returns', 'order_return_lines', 'research_prices', 'ai_messages'];
 
     /** SELECT + INSERT + UPDATE (sin DELETE): los asientos del libro de caja se anulan, nunca se borran. */
     public const NO_DELETE = ['financial_transactions'];

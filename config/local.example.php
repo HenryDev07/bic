@@ -19,4 +19,11 @@ return [
         'user'     => 'bic_app',
         'password' => 'CAMBIAR',
     ],
+    // Asistente de IA (opcional). Sin clave funciona en modo local (sin IA externa).
+    // 'ai' => [
+    //     'provider' => 'anthropic',   // 'anthropic' | 'openai' (también sirve para servidores compatibles con base_url)
+    //     'api_key'  => 'TU_CLAVE',    // o variable de entorno BIC_AI_API_KEY
+    //     'model'    => '',            // vacío = modelo por defecto del proveedor
+    //     'base_url' => '',
+    // ],
 ];

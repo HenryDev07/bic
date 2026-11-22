@@ -21,6 +21,14 @@ return [
         'user'     => '',
         'password' => '',
     ],
+    // Asistente de IA: 'local' (sin IA, reglas por palabras clave), 'anthropic' u 'openai' (cualquier API compatible).
+    // La clave va en config/local.php o en la variable BIC_AI_API_KEY; nunca en la base de datos.
+    'ai' => [
+        'provider' => 'local',
+        'api_key'  => '',
+        'model'    => '',
+        'base_url' => '',
+    ],
     'storage' => [
         // Relativa a la raíz del proyecto, o ruta absoluta en un servidor.
         'path' => 'storage',

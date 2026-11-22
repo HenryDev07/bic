@@ -28,6 +28,9 @@ Abre **http://localhost/bic/** (o `http://localhost/bic/public/`) e inicia sesi�
 
 Comprobación de seguridad recomendada: abre `http://localhost/bic/config/local.php` y `http://localhost/bic/src/Core/App.php`; ambas deben responder **403 Prohibido**.
 
+## Etapa 6 — Asistente de IA
+Menú **Análisis → Asistente IA** (permiso `ai.use`). Funciona sin configuración en modo local; para IA real añade en `config/local.php` el bloque `ai` (ver `config/local.example.php`). Solo consulta datos, nunca modifica ni ejecuta SQL. Tras actualizar: `php bin/migrate.php --seed` y `php bin/db-check.php`.
+
 ## Etapa 5 — Reportes e inteligencia
 Menú **Análisis**: Reportes (pantalla + CSV/Excel/PDF) e Inteligencia comercial. El Excel necesita la extensión `zip` de PHP activa en WAMP. Tras actualizar: `php bin/migrate.php --seed`.
 
@@ -55,7 +58,7 @@ Primero crea una **cuenta** en Finanzas y, en Catálogo → Impuestos, las tasas
 Qué incluye la Etapa 3: inicio/cierre de sesión con bloqueo por intentos fallidos, usuarios (alta, edición, activar/desactivar), roles con matriz de permisos editable, configuración de seguridad, auditoría con filtros, perfil (cambio de contraseña) y tema claro/oscuro.
 
 ## Pruebas
-`composer test` ejecuta ~160 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
+`composer test` ejecuta ~170 pruebas: utilidades, servicios y **peticiones completas** (router, sesión, CSRF, permisos, vistas) sobre una base SQLite en memoria generada desde tus migraciones reales (requiere la extensión `pdo_sqlite`; si falta, esas pruebas se omiten). La verificación contra tu MariaDB/MySQL real (privilegios y límites de `bic_app`) es `php bin/db-check.php`.
 
 ## Flujo de trabajo del esquema
 | Quiero… | Comando |
