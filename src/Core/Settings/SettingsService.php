@@ -15,6 +15,8 @@ final class SettingsService
         'max_login_attempts'       => ['label' => 'Intentos de acceso fallidos antes de bloquear', 'min' => 3, 'max' => 20, 'default' => 5, 'group' => 'security'],
         'login_lockout_minutes'    => ['label' => 'Duración del bloqueo por intentos (minutos)', 'min' => 1, 'max' => 1440, 'default' => 15, 'group' => 'security'],
         'password_min_length'      => ['label' => 'Longitud mínima de contraseña', 'min' => 8, 'max' => 72, 'default' => 10, 'group' => 'security'],
+        'insight_min_margin_pct'   => ['label' => 'Margen mínimo esperado en el análisis (%)', 'min' => 1, 'max' => 90, 'default' => 20, 'group' => 'insights'],
+        'insight_slow_days'        => ['label' => 'Días sin ventas para considerar un producto estancado', 'min' => 7, 'max' => 365, 'default' => 60, 'group' => 'insights'],
     ];
 
     /** @var array<int,array<string,int>> */
@@ -58,7 +60,10 @@ final class SettingsService
         $errors = [];
         $new = [];
         foreach (self::DEFINITIONS as $key => $def) {
-            $raw = $input[$key] ?? null;
+            if (!array_key_exists($key, $input)) {
+                continue; // ajuste no enviado: conserva su valor actual
+            }
+            $raw = $input[$key];
             $raw = is_string($raw) ? trim($raw) : $raw;
             if (!is_string($raw) || !preg_match('/^\d+$/', $raw) || (int) $raw < $def['min'] || (int) $raw > $def['max']) {
                 $errors[$key] = "«{$def['label']}» debe estar entre {$def['min']} y {$def['max']}.";

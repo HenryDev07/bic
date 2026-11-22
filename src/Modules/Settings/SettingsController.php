@@ -21,12 +21,14 @@ final class SettingsController extends Controller
         $businessId = $this->app->actor()['business_id'];
         $input = [];
         foreach (array_keys(SettingsService::DEFINITIONS) as $key) {
-            $input[$key] = $request->post[$key] ?? null;
+            if (array_key_exists($key, $request->post)) { // lo no enviado conserva su valor
+                $input[$key] = $request->post[$key];
+            }
         }
         $result = $this->app->settings->update($businessId, $input);
 
         if ($result['errors'] !== []) {
-            return $this->form($input, $result['errors'], 422);
+            return $this->form($input + $result["old"], $result["errors"], 422);
         }
         if ($result['old'] !== $result['new']) {
             $this->app->audit('settings.update', 'settings', null, $result['old'], $result['new']);

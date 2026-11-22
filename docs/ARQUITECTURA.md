@@ -102,7 +102,7 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **4e — Clientes y pedidos** *(hecha)* | `customers`, `orders`, `order_lines`, `stock_reservations`, `order_status_history`, `order_payments`, `order_returns(+lines)`; reservas, entrega con costo congelado, anticipos/cobros/reembolsos ligados al libro, devoluciones proporcionales, idempotencia de cobros | Ciclo de §2 completo, sin doble registro |
 | **4f — Gastos e investigación** *(hecha)* | `expense_categories`, `expenses` (1:1 con el libro), `research_items`, `research_prices` (inmutable); estado de resultados | Ganancia bruta/neta cuadran con casos a mano (probado) |
 | **4g — Dashboard real** *(hecha)* | indicadores por permiso, gráficos SVG del servidor | Cada cifra sale de datos reales y coincide con su módulo |
-| 5 — Inteligencia y reportes | Clasificación, ABC, rotación, equilibrio, PDF/Excel/CSV | Reportes = dashboard |
+| **5 — Inteligencia y reportes** *(hecha)* | 6 reportes (ventas, rentabilidad, por cobrar, inventario, gastos, resultados) en pantalla/CSV/Excel/PDF; análisis ABC, reposición, estancados, márgenes, mejores clientes | Cifras = las de cada módulo; exportes válidos |
 | 6 — IA | Proveedores intercambiables, contexto, recomendaciones | Funciona con y sin API |
 | 7 — Cierre | Pruebas globales, optimización, manuales | Lista de la sección 21 del prompt en verde |
 
@@ -141,3 +141,9 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 - Gráficos: SVG generado en el servidor (`Core\Charts`), sin JavaScript ni CDN y compatible con la CSP `default-src 'self'` (que bloquea estilos en línea). Se eligió en lugar de Chart.js para no depender de un archivo de terceros; si más adelante se quiere interactividad, se puede añadir Chart.js local en `public/assets/vendor/`.
 - Cada bloque del panel solo se calcula y muestra si el usuario tiene el permiso del módulo de origen (ventas, gastos/resultados, finanzas, compras, inventario; el valor del inventario exige `products.cost`).
 - Cifras: ingresos y ganancias salen de `ExpenseService::profitAndLoss` (misma regla que el estado de resultados); por cobrar = saldos positivos de pedidos entregados; anticipos = pasivo de pedidos sin entregar; por pagar = pendiente de órdenes de compra enviadas.
+
+## 13. Notas de la etapa 5
+- Exportes sin librerías externas: `Core\Export` (Table neutral → CSV con protección de fórmulas, XLSX mínimo con texto en línea —nunca fórmulas— y PDF con Helvetica/WinAnsi paginado). El Excel requiere `ext-zip` (si falta, mensaje claro; CSV y PDF siguen funcionando).
+- Permisos: `reports.view` (pantalla), `reports.export` (CSV/Excel/PDF, auditado como `report.export`), `insights.view`. Cada reporte exige además el permiso de su módulo; los que muestran costos exigen `products.cost`.
+- Inteligencia = reglas explícitas y verificables (no predicciones): variación vs período anterior; ABC (A hasta 80 % acumulado); reposición (disponible ≤ mínimo; sugerido = mínimo + 14 días de venta media − disponible); existencias estancadas (días configurables); margen realizado bajo el mínimo configurable; precio de lista bajo el costo; mejores clientes.
+- Nuevos ajustes en Configuración: `insight_min_margin_pct`, `insight_slow_days`. El formulario conserva el valor de cualquier ajuste no enviado.

@@ -42,9 +42,9 @@ final class SeedsAndAuthTest extends DatabaseTestCase
         $this->assertSame($this->countRows('permissions'), count($perms($this, 'admin')), 'el administrador tiene todos los permisos');
         $this->assertSame([
             'audit.view', 'catalog.manage', 'catalog.view', 'customers.create', 'customers.edit', 'customers.view', 'dashboard.view', 'expenses.create', 'expenses.view', 'expenses.void', 'finance.create', 'finance.manage', 'finance.view', 'finance.void',
-            'inventory.adjust', 'inventory.view', 'products.cost', 'products.create', 'products.edit', 'products.view', 'purchases.cancel', 'purchases.create', 'purchases.pay', 'purchases.receive', 'purchases.view', 'research.manage', 'research.view', 'sales.cancel', 'sales.create', 'sales.edit', 'sales.pay', 'sales.refund', 'sales.return', 'sales.view', 'settings.view', 'suppliers.create', 'suppliers.edit', 'suppliers.view',
+            'insights.view', 'inventory.adjust', 'inventory.view', 'products.cost', 'products.create', 'products.edit', 'products.view', 'purchases.cancel', 'purchases.create', 'purchases.pay', 'purchases.receive', 'purchases.view', 'reports.export', 'reports.view', 'research.manage', 'research.view', 'sales.cancel', 'sales.create', 'sales.edit', 'sales.pay', 'sales.refund', 'sales.return', 'sales.view', 'settings.view', 'suppliers.create', 'suppliers.edit', 'suppliers.view',
         ], $perms($this, 'manager'));
-        $this->assertSame(['catalog.view', 'customers.view', 'dashboard.view', 'expenses.view', 'finance.view', 'inventory.view', 'products.cost', 'products.view', 'purchases.view', 'research.view', 'sales.view', 'suppliers.view'], $perms($this, 'analyst'));
+        $this->assertSame(['catalog.view', 'customers.view', 'dashboard.view', 'expenses.view', 'finance.view', 'insights.view', 'inventory.view', 'products.cost', 'products.view', 'purchases.view', 'reports.export', 'reports.view', 'research.view', 'sales.view', 'suppliers.view'], $perms($this, 'analyst'));
         $this->assertSame(['customers.create', 'customers.edit', 'customers.view', 'dashboard.view', 'inventory.view', 'products.view', 'sales.create', 'sales.edit', 'sales.pay', 'sales.view'], $perms($this, 'seller'), 'el vendedor ve precios y existencias pero no costos, compras ni finanzas');
     }
 
