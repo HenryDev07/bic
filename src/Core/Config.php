@@ -20,6 +20,8 @@ final class Config
         'app.env'           => 'BIC_ENV',
         'app.debug'         => 'BIC_DEBUG',
         'app.url'           => 'BIC_URL',
+        'app.logo'          => 'BIC_LOGO',
+        'app.logo_alt'      => 'BIC_LOGO_ALT',
         'storage.path'      => 'BIC_STORAGE_PATH',
         'ai.provider'       => 'BIC_AI_PROVIDER',
         'ai.api_key'        => 'BIC_AI_API_KEY',

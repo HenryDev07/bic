@@ -10,7 +10,9 @@
 </head>
 <body class="guest">
   <main class="guest-wrap">
-    <div class="guest-brand"><span class="brand-mark">BIC</span><span>Business Intelligence Commerce</span></div>
+    <div class="guest-brand">
+      <img class="guest-logo" src="<?= $e($logoUrl) ?>" alt="<?= $e($logoAlt) ?>">
+    </div>
     <?php foreach ($flashes as $flash): ?>
       <div class="alert alert-<?= $e($flash['type']) ?>" role="alert"><?= $e($flash['message']) ?></div>
     <?php endforeach; ?>

@@ -102,9 +102,8 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **4e — Clientes y pedidos** *(hecha)* | `customers`, `orders`, `order_lines`, `stock_reservations`, `order_status_history`, `order_payments`, `order_returns(+lines)`; reservas, entrega con costo congelado, anticipos/cobros/reembolsos ligados al libro, devoluciones proporcionales, idempotencia de cobros | Ciclo de §2 completo, sin doble registro |
 | **4f — Gastos e investigación** *(hecha)* | `expense_categories`, `expenses` (1:1 con el libro), `research_items`, `research_prices` (inmutable); estado de resultados | Ganancia bruta/neta cuadran con casos a mano (probado) |
 | **4g — Dashboard real** *(hecha)* | indicadores por permiso, gráficos SVG del servidor | Cada cifra sale de datos reales y coincide con su módulo |
-| **5 — Inteligencia y reportes** *(hecha)* | **6 — IA** *(hecha)* | proveedor intercambiable (Anthropic, OpenAI/compatible, modo local), 8 herramientas de solo lectura, conversaciones y mensajes inmutables | Sin SQL libre; la IA no inventa cifras ni excede permisos |
-| 6 — IA | Proveedores intercambiables, contexto, recomendaciones | Funciona con y sin API |
-| 7 — Cierre | Pruebas globales, optimización, manuales | Lista de la sección 21 del prompt en verde |
+| **6 — IA** *(hecha)* | proveedor intercambiable (Anthropic, OpenAI/compatible, modo local), 8 herramientas de solo lectura, conversaciones y mensajes inmutables | Sin SQL libre; la IA no inventa cifras ni excede permisos |
+| **7 — Cierre** *(hecha)* | Respaldos verificables y restauración, `doctor`, pruebas de seguridad de todas las rutas, prueba de ciclo completo, manuales | Pruebas globales verdes; `bin/doctor.php` sin errores en tu equipo |
 
 Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer módulo que los use), copias de seguridad (etapa 7), promociones complejas, garantías y calendario (posponer), facturación fiscal electrónica (fuera de alcance).
 
@@ -154,3 +153,10 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 - **Privacidad**: no se envían contactos, contraseñas, claves ni SQL. Los resultados de herramientas no se guardan; `ai_messages` es solo-inserción para `bic_app` (guarda pregunta, nombre/argumentos de herramientas y respuesta, con proveedor y tokens). Cada conversación es privada de su usuario. Cada consulta se audita (`ai.ask`).
 - **Límites**: 1000 caracteres por pregunta, 4 rondas de herramientas, `ai_daily_limit` mensajes diarios por usuario (Configuración).
 - **Proveedores**: `config/local.php` → `ai.provider` = `anthropic` | `openai` (con `base_url` sirve para servidores compatibles) y `ai.api_key` (o `BIC_AI_API_KEY`). Sin clave: modo local por palabras clave sobre las mismas herramientas. La salida del modelo siempre se escapa (nunca HTML). Requiere ext-curl para los proveedores externos.
+
+## 15. Notas de la etapa 7 (cierre)
+
+- **Respaldos sin `mysqldump`**: `src/Core/Backup`. `MySqlSource` lee tablas/filas con el usuario `bic_app` (solo `SELECT`, paginación por `id`); `SqlDumper` escribe un `.sql` con un **separador aleatorio por respaldo** (`/*<token>*/`) tras cada sentencia, de modo que ningún dato —ni uno que imite el separador— puede partir una sentencia al restaurar. Termina con `-- BIC-DUMP-COMPLETE rows=N`; un archivo sin esa marca se rechaza (truncado). `BackupManager` comprime (`.sql.gz`), guarda `.sha256`, **vuelve a leer el respaldo recién creado** y poda a los `--keep` más recientes.
+- **Restauración** (`bin/restore.php`): verifica suma y marca de fin, exige escribir el nombre de la base, usa credenciales de administrador solo para esa ejecución, ejecuta con `FOREIGN_KEY_CHECKS=0` y vuelve a aplicar los permisos de `bic_app`.
+- **`bin/doctor.php`**: PHP/extensiones, carpetas escribibles, `config/local.php`, depuración apagada, conexión **no root**, migraciones pendientes o modificadas, conciliación de finanzas/inventario/ventas por negocio y antigüedad del último respaldo. Código de salida 0/1 (apto para programar).
+- **Pruebas de cierre**: `RouteSecurityTest` recorre todas las rutas registradas (sin sesión → login/403; POST sin CSRF rechazado; permisos existentes; vendedor → 403 en lo que no tiene); `EndToEndTest` ejecuta compra → recepción → pago → venta con anticipo → entrega → devolución → gasto → resultados y exige conciliación vacía.

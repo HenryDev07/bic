@@ -14,6 +14,12 @@ final class Router
     /** @var list<array{method:string,regex:string,handler:array{0:class-string,1:string},permission:?string,public:bool}> */
     private array $routes = [];
 
+    /** @return list<array{method:string,regex:string,handler:array{0:class-string,1:string},permission:?string,public:bool}> */
+    public function routes(): array
+    {
+        return $this->routes;
+    }
+
     /** @param array{0:class-string,1:string} $handler */
     public function get(string $path, array $handler, ?string $permission = null, bool $public = false): void
     {

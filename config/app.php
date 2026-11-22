@@ -10,6 +10,9 @@ declare(strict_types=1);
 return [
     'app' => [
         'name'  => 'Business Intelligence Commerce',
+        // Ruta relativa a public/assets. Sustituya logo.svg por el archivo real de su marca.
+        'logo'  => 'images/B I C.png',
+        'logo_alt' => 'BIC',
         'env'   => 'local',
         'debug' => true,
         'url'   => 'http://localhost/bic/public',

@@ -177,6 +177,8 @@ final class App
             'user'      => $this->user,
             'csrfToken' => $this->csrf->token(),
             'appName'   => (string) $this->config->get('app.name', 'BIC'),
+            'logoUrl'   => $this->asset((string) $this->config->get('app.logo', 'images/logo.svg')),
+            'logoAlt'   => (string) $this->config->get('app.logo_alt', 'BIC'),
             'menu'      => $this->gate !== null ? $this->modules->menu($this->gate) : [],
             'currentPath' => $this->request?->path ?? '/',
             'flashes'   => $this->session->pullFlashes(),

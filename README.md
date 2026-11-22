@@ -28,6 +28,14 @@ Abre **http://localhost/bic/** (o `http://localhost/bic/public/`) e inicia sesi�
 
 Comprobación de seguridad recomendada: abre `http://localhost/bic/config/local.php` y `http://localhost/bic/src/Core/App.php`; ambas deben responder **403 Prohibido**.
 
+## Etapa 7 — Cierre
+Documentación: `docs/MANUAL_USUARIO.md`, `docs/MANUAL_ADMIN.md`, `docs/SEGURIDAD.md`, `docs/PRUEBAS.md`, `CHANGELOG.md`.
+```
+php bin/doctor.php                 # diagnóstico completo
+php bin/backup.php --keep=14       # respaldo .sql.gz + SHA-256 (programable con schtasks)
+php bin/restore.php <archivo>      # restaura con confirmación
+```
+
 ## Etapa 6 — Asistente de IA
 Menú **Análisis → Asistente IA** (permiso `ai.use`). Funciona sin configuración en modo local; para IA real añade en `config/local.php` el bloque `ai` (ver `config/local.example.php`). Solo consulta datos, nunca modifica ni ejecuta SQL. Tras actualizar: `php bin/migrate.php --seed` y `php bin/db-check.php`.
 

@@ -10,7 +10,9 @@
 </head>
 <body>
 <aside class="sidebar" id="sidebar">
-  <a class="brand" href="<?= $e($url('/')) ?>"><span class="brand-mark">BIC</span><span class="brand-name">Business Intelligence<br>Commerce</span></a>
+  <a class="brand" href="<?= $e($url('/')) ?>" aria-label="<?= $e($appName) ?>">
+    <img class="brand-logo" src="<?= $e($logoUrl) ?>" alt="<?= $e($logoAlt) ?>">
+  </a>
   <nav class="nav" aria-label="Principal">
     <?php
     // Solo se marca la opción cuya ruta coincide con más especificidad (/finance/ledger no enciende /finance).
