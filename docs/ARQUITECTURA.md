@@ -101,7 +101,7 @@ Contraseñas `password_hash`; sesión `HttpOnly`/`SameSite`, regenera ID al entr
 | **4d — Compras** *(hecha)* | órdenes, líneas con impuesto recuperable o no, costos de llegada, recepciones parciales, pagos ligados al libro de caja | Costo promedio correcto al recibir; compra ≠ gasto |
 | **4e — Clientes y pedidos** *(hecha)* | `customers`, `orders`, `order_lines`, `stock_reservations`, `order_status_history`, `order_payments`, `order_returns(+lines)`; reservas, entrega con costo congelado, anticipos/cobros/reembolsos ligados al libro, devoluciones proporcionales, idempotencia de cobros | Ciclo de §2 completo, sin doble registro |
 | **4f — Gastos e investigación** *(hecha)* | `expense_categories`, `expenses` (1:1 con el libro), `research_items`, `research_prices` (inmutable); estado de resultados | Ganancia bruta/neta cuadran con casos a mano (probado) |
-| 4g — Dashboard real | Indicadores y gráficos | Ninguna cifra estática |
+| **4g — Dashboard real** *(hecha)* | indicadores por permiso, gráficos SVG del servidor | Cada cifra sale de datos reales y coincide con su módulo |
 | 5 — Inteligencia y reportes | Clasificación, ABC, rotación, equilibrio, PDF/Excel/CSV | Reportes = dashboard |
 | 6 — IA | Proveedores intercambiables, contexto, recomendaciones | Funciona con y sin API |
 | 7 — Cierre | Pruebas globales, optimización, manuales | Lista de la sección 21 del prompt en verde |
@@ -136,3 +136,8 @@ Funcionalidades evaluadas y su momento: notificaciones y adjuntos (con el primer
 - Gasto = salida del libro (`source_type='expense'`), se anula desde el gasto (`expenses.void`). Categorías por negocio (se siembran 7 por defecto al primer uso). Enlaces opcionales a proveedor, producto o pedido; nunca a compras (esos costos se capitalizan).
 - Estado de resultados (`/expenses/profit`, moneda base, sin impuestos): ingresos = base de pedidos entregados en el período − base de devoluciones del período; costo = costo congelado − costo de lo devuelto **y repuesto** (lo devuelto sin reponer queda como pérdida); bruta = ingresos − costo; neta = bruta − gastos vigentes por su fecha.
 - Investigación: precio objetivo vs costo estimado (margen y recargo) y precios observados (mín/prom/máx). `research_prices` es solo-inserción para `bic_app`.
+
+## 12. Notas de la etapa 4g
+- Gráficos: SVG generado en el servidor (`Core\Charts`), sin JavaScript ni CDN y compatible con la CSP `default-src 'self'` (que bloquea estilos en línea). Se eligió en lugar de Chart.js para no depender de un archivo de terceros; si más adelante se quiere interactividad, se puede añadir Chart.js local en `public/assets/vendor/`.
+- Cada bloque del panel solo se calcula y muestra si el usuario tiene el permiso del módulo de origen (ventas, gastos/resultados, finanzas, compras, inventario; el valor del inventario exige `products.cost`).
+- Cifras: ingresos y ganancias salen de `ExpenseService::profitAndLoss` (misma regla que el estado de resultados); por cobrar = saldos positivos de pedidos entregados; anticipos = pasivo de pedidos sin entregar; por pagar = pendiente de órdenes de compra enviadas.

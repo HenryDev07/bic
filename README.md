@@ -28,6 +28,9 @@ Abre **http://localhost/bic/** (o `http://localhost/bic/public/`) e inicia sesi�
 
 Comprobación de seguridad recomendada: abre `http://localhost/bic/config/local.php` y `http://localhost/bic/src/Core/App.php`; ambas deben responder **403 Prohibido**.
 
+## Etapa 4g — Dashboard
+El inicio muestra indicadores reales según tus permisos (período 7/30/90 días) con gráficos SVG propios, sin librerías externas.
+
 ## Etapa 4f — Gastos, resultados e investigación
 Menú **Finanzas**: Gastos y Estado de resultados; **Catálogo**: Investigación. Tras actualizar: `php bin/migrate.php --seed` y `php bin/db-check.php`.
 

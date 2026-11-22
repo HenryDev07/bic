@@ -200,3 +200,16 @@ small.muted { font-size: .8rem; }
 textarea.input { resize: vertical; }
 .toolbar .field { flex: 1 1 200px; margin: 0; }
 .toolbar .field .input { flex: none; width: 100%; max-width: none; }
+
+/* Dashboard: gráficos SVG del servidor (sin JS ni estilos en línea por la CSP) */
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .grid-4 { grid-template-columns: 1fr; } }
+.chart { width: 100%; height: auto; display: block; }
+.chart-bar { fill: var(--primary); }
+.chart-bar:hover { fill: var(--primary-strong); }
+.chart-axis { stroke: var(--border); stroke-width: 1; }
+.chart-label { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.chart-label-left { fill: var(--text); }
+.neg { color: var(--danger); }
+.kv { display: flex; justify-content: space-between; margin: 0 0 .4rem; }
