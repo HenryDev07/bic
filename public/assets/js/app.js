@@ -10,6 +10,58 @@
     el.addEventListener('click', function () { document.body.classList.toggle('sidebar-open'); });
   });
 
+  // ---- Persistir estado del menú lateral (secciones abiertas + scroll) ----
+  var sidebar = document.getElementById('sidebar');
+  var navGroups = document.querySelectorAll('.nav-group[data-nav-group]');
+  var NAV_KEY = 'bic_nav_state';
+  var SCROLL_KEY = 'bic_nav_scroll';
+
+  // Restaurar estado guardado de las secciones abiertas/cerradas.
+  (function restoreNavState() {
+    try {
+      var raw = sessionStorage.getItem(NAV_KEY);
+      if (!raw) return;
+      var saved = JSON.parse(raw);
+      navGroups.forEach(function (det) {
+        var id = det.getAttribute('data-nav-group');
+        if (id !== null && saved.hasOwnProperty(id)) {
+          det.open = saved[id];
+        }
+      });
+    } catch (_) { /* corrupted — ignore */ }
+  })();
+
+  // Restaurar posición de scroll del sidebar.
+  (function restoreSidebarScroll() {
+    try {
+      var pos = sessionStorage.getItem(SCROLL_KEY);
+      if (pos !== null && sidebar) {
+        sidebar.scrollTop = parseInt(pos, 10) || 0;
+      }
+    } catch (_) {}
+  })();
+
+  // Guardar estado al abrir/cerrar una sección.
+  navGroups.forEach(function (det) {
+    det.addEventListener('toggle', function () {
+      try {
+        var state = {};
+        navGroups.forEach(function (d) {
+          var id = d.getAttribute('data-nav-group');
+          if (id !== null) state[id] = d.open;
+        });
+        sessionStorage.setItem(NAV_KEY, JSON.stringify(state));
+      } catch (_) {}
+    });
+  });
+
+  // Guardar scroll del sidebar justo antes de que el navegador abandone la página.
+  window.addEventListener('beforeunload', function () {
+    try {
+      if (sidebar) sessionStorage.setItem(SCROLL_KEY, String(sidebar.scrollTop));
+    } catch (_) {}
+  });
+
   // Tema claro/oscuro: se aplica al instante y se guarda en la cuenta del usuario.
   document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
     btn.addEventListener('click', function () {

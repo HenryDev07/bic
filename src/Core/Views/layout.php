@@ -27,8 +27,14 @@
         }
     }
     ?>
-    <?php foreach ($menu as $group): ?>
-      <details class="nav-group" open>
+    <?php foreach ($menu as $gi => $group):
+        // Auto-abrir solo el grupo que contiene la opción activa.
+        $groupHasActive = false;
+        foreach ($group['items'] as $it) {
+            if ($it['path'] === $bestPath) { $groupHasActive = true; break; }
+        }
+    ?>
+      <details class="nav-group" data-nav-group="<?= $gi ?>"<?= $groupHasActive ? ' open' : '' ?>>
         <summary><span><?= $e($group['label']) ?></span><?= $icon('chevron', 14) ?></summary>
         <?php foreach ($group['items'] as $item):
             $active = $item['path'] === $bestPath; ?>
